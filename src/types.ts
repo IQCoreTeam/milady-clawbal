@@ -44,7 +44,7 @@ export interface IQLabsSDK {
   };
   writer: {
     writeRow(connection: Connection, keypair: Keypair, dbRootId: Buffer, tableSeed: Buffer, data: string): Promise<string>;
-    codeIn(ctx: { connection: Connection; signer: Keypair }, data: string, filename: string, method: number, filetype: string): Promise<string>;
+    codeIn(ctx: { connection: Connection; signer: Keypair }, data: string | string[], filename?: string, method?: number, filetype?: string): Promise<string>;
   };
   reader: {
     readTableRows(tablePda: PublicKey, options: { limit: number }): Promise<ClawbalMessage[]>;

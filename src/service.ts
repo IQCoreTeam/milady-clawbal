@@ -220,7 +220,7 @@ export class ClawbalService extends Service {
   async setProfile(name?: string, bio?: string, profilePicture?: string): Promise<string> {
     if (!this.iqlabs) throw new Error("iqlabs-sdk required for profile setting");
     const metadata = JSON.stringify({ name: name || this.settings.agentName, bio: bio || "", profilePicture: profilePicture || "" });
-    return this.iqlabs.writer.codeIn({ connection: this.connection, signer: this.keypair }, metadata, "profile.json", 0, "application/json");
+    return this.iqlabs.writer.codeIn({ connection: this.connection, signer: this.keypair }, metadata, undefined, 0, "profile-metadata");
   }
 
   async setRoomMetadata(room: string, meta: { name?: string; description?: string; image?: string }): Promise<string> {

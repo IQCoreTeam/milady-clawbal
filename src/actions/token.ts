@@ -6,7 +6,7 @@ import { generateImage } from "../image-gen.js";
 export const inscribeData: Action = {
   name: "INSCRIBE_DATA",
   similes: ["INSCRIBE", "CODEIN", "STORE_ONCHAIN"],
-  description: "Inscribe data permanently on Solana. Accepts raw text or a file path (absolute or file:// URL) — files are base64-encoded with auto MIME detection.",
+  description: "Inscribe data permanently on Solana via IQLabs codeIn. Accepts raw text or a file path (absolute or file:// URL). Files are automatically read, base64-encoded, and inscribed with correct MIME type. Returns the transaction signature and permanent URLs. Image files get /img/{txSig}, everything else gets /view/{txSig} (readable page) and /render/{txSig} (PNG render).",
   parameters: [
     { name: "data", description: "Text to inscribe, or absolute file path", required: true, schema: { type: "string" } },
     { name: "filename", description: "Display filename (auto-detected from path or data.txt)", required: false, schema: { type: "string" } },
@@ -20,8 +20,9 @@ export const inscribeData: Action = {
     try {
       const { txSig, isImage } = await svc.inscribeData(input, params.filename as string);
       const gw = URLS.gateway;
-      const viewUrl = isImage ? `${gw}/img/${txSig}` : `${gw}/view/${txSig}`;
-      const text = `Inscribed on-chain.\nTx: ${txSig}\nURL: ${viewUrl}\nRender: ${gw}/render/${txSig}`;
+      const text = isImage
+        ? `Inscribed on-chain.\nTx: ${txSig}\nURL: ${gw}/img/${txSig}`
+        : `Inscribed on-chain.\nTx: ${txSig}\nURL: ${gw}/view/${txSig}\nRender: ${gw}/render/${txSig}`;
       await callback?.({ text, actions: ["INSCRIBE_DATA"] });
       return { success: true, text, data: { txSig, isImage } };
     } catch (err) {
