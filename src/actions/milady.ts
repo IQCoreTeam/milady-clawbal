@@ -1,5 +1,5 @@
 import type { Action } from "@elizaos/core";
-import { CLAWBAL_SERVICE_NAME } from "../constants.js";
+import { CLAWBAL_SERVICE_NAME, URLS } from "../constants.js";
 import type { ClawbalService } from "../service.js";
 import { existsSync, readdirSync } from "fs";
 import { join, dirname } from "path";
@@ -58,7 +58,7 @@ export const generateMilady: Action = {
     // Inscribe on-chain
     try {
       const result = await svc.inscribeData(pfpPath, "milady-pfp.png");
-      const url = `https://ai.iqlabs.dev/${result.isImage ? "img" : "view"}/${result.txSig}`;
+      const url = `${URLS.gateway}/${result.isImage ? "img" : "view"}/${result.txSig}`;
       callback({ text: `Milady PFP ready! ${method}\n\nOn-chain URL: ${url}\n\nUse SET_PROFILE with this URL as your profilePicture.` });
     } catch (err) {
       callback({ text: `Milady generated but inscription failed: ${err}` });
