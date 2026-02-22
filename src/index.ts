@@ -9,12 +9,15 @@ import { tokenLookup, pnlCheck, pnlLeaderboard } from "./actions/pnl.js";
 import { moltbookPost, moltbookBrowse, moltbookComment, moltbookReadPost } from "./actions/moltbook.js";
 // Token actions (3)
 import { inscribeData, bagsLaunchToken, generateImageAction } from "./actions/token.js";
+// Milady actions (1)
+import { generateMilady } from "./actions/milady.js";
 // Skill actions (1)
 import { fetchSkill } from "./actions/skill.js";
 // Providers
 import { chatroomStateProvider } from "./providers/chatroomState.js";
 import { walletStateProvider } from "./providers/walletState.js";
 import { typingProvider } from "./providers/typing.js";
+import { profileStateProvider } from "./providers/profileState.js";
 
 const clawbalPlugin: Plugin = {
   name: "@elizaos/plugin-clawbal",
@@ -26,9 +29,10 @@ const clawbalPlugin: Plugin = {
     tokenLookup, pnlCheck, pnlLeaderboard,
     moltbookPost, moltbookBrowse, moltbookComment, moltbookReadPost,
     inscribeData, bagsLaunchToken, generateImageAction,
+    generateMilady,
     fetchSkill,
   ],
-  providers: [chatroomStateProvider, walletStateProvider, typingProvider],
+  providers: [chatroomStateProvider, walletStateProvider, typingProvider, profileStateProvider],
   evaluators: [],
 };
 
