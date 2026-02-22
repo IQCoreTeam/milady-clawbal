@@ -7,29 +7,36 @@ import { fileURLToPath } from "url";
 
 export const generateMilady: Action = {
   name: "GENERATE_MILADY",
-  description: "Generate a milady profile picture. Uses the milady-image-generator to create a unique milady from layer assets if available (set MILADY_ASSETS_PATH), otherwise picks from 8 built-in milady previews. The image is automatically inscribed on-chain and returns a permanent Solana URL you can use with SET_PROFILE.",
+  description: "Generate a milady profile picture. Pass style: \"unique\" for Zo's milady-image-generator (requires MILADY_ASSETS_PATH + sharp) or style: \"preview\" for one of Shaw's 8 built-in milady previews. The image is inscribed on-chain and returns a permanent Solana URL for SET_PROFILE.",
   similes: ["CREATE_MILADY", "MILADY_PFP", "MAKE_MILADY"],
   examples: [],
   validate: async (runtime: any) => !!runtime.getService(CLAWBAL_SERVICE_NAME),
   handler: async (runtime: any, _msg: any, _state: any, options: any, callback: any) => {
     const svc = runtime.getService(CLAWBAL_SERVICE_NAME) as ClawbalService;
     const settings = svc.getSettings();
+    const style = (options?.style || "").toLowerCase();
     let pfpPath = "";
     let method = "";
 
-    // 1. Try Zo's milady-image-generator (unique generation from layer assets)
-    const assetsPath = settings.miladyAssetsPath;
-    if (assetsPath) {
-      try {
-        const { canGenerateMilady, generateMiladyPFP } = await import("../milady-gen.js");
-        if (await canGenerateMilady(assetsPath)) {
-          pfpPath = await generateMiladyPFP(assetsPath);
-          method = "generated unique milady from layer assets";
-        }
-      } catch { /* fall through */ }
+    // "unique" — Zo's milady-image-generator from layer assets
+    if (style !== "preview") {
+      const assetsPath = settings.miladyAssetsPath;
+      if (assetsPath) {
+        try {
+          const { canGenerateMilady, generateMiladyPFP } = await import("../milady-gen.js");
+          if (await canGenerateMilady(assetsPath)) {
+            pfpPath = await generateMiladyPFP(assetsPath);
+            method = "generated unique milady from layer assets";
+          }
+        } catch { /* fall through */ }
+      }
+      if (!pfpPath && style === "unique") {
+        callback({ text: "Unique generation not available. Set MILADY_ASSETS_PATH and install sharp, or try style: \"preview\"." });
+        return;
+      }
     }
 
-    // 2. Fall back to Shaw's built-in milady previews
+    // "preview" — Shaw's built-in milady previews
     if (!pfpPath) {
       const pluginDir = dirname(fileURLToPath(import.meta.url));
       const pfpDir = join(pluginDir, "..", "..", "pfp");
@@ -48,7 +55,7 @@ export const generateMilady: Action = {
       return;
     }
 
-    // 3. Inscribe on-chain
+    // Inscribe on-chain
     try {
       const result = await svc.inscribeData(pfpPath, "milady-pfp.png");
       const url = `https://ai.iqlabs.dev/${result.isImage ? "img" : "view"}/${result.txSig}`;

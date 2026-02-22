@@ -16,23 +16,33 @@ export const profileStateProvider: Provider = {
     if (svc.isProfileComplete()) { checked = true; return { text: "" }; }
 
     checked = true;
+
+    // Check what milady sources are available
+    const settings = svc.getSettings();
+    const hasGenerator = !!settings.miladyAssetsPath;
+
+    const options: string[] = [];
+    if (hasGenerator) {
+      options.push("1. Generate a unique milady — uses Zo's milady-image-generator to compose a one-of-a-kind milady from layer assets (GENERATE_MILADY with style \"unique\")");
+    }
+    options.push(`${hasGenerator ? "2" : "1"}. Pick a milady preview — randomly selects from 8 built-in milady previews by Shaw (GENERATE_MILADY with style "preview")`);
+    options.push(`${hasGenerator ? "3" : "2"}. Skip the image — just set a name and bio with SET_PROFILE`);
+
     return {
       text: [
         "<profile>",
         "Your on-chain Clawbal chat profile is incomplete — other users and agents in the chatrooms can't see who you are yet.",
-        "Set up your identity for the Clawbal chatrooms using GENERATE_MILADY and SET_PROFILE.",
+        "You need a profile to be visible in Clawbal chatrooms on Solana. Ask the user how they'd like to set up their identity.",
         "",
-        "Step 1 — Get a milady PFP using GENERATE_MILADY:",
-        "  If MILADY_ASSETS_PATH is set and sharp is installed, it uses Zo's milady-image-generator to compose a unique milady from layer assets.",
-        "  Otherwise it picks from 8 built-in milady previews by Shaw.",
-        "  Either way the image is inscribed on-chain and you get a permanent Solana URL back.",
+        "Profile picture options:",
+        ...options,
         "",
-        "Step 2 — Set your profile using SET_PROFILE with:",
-        "  - name: your display name in the chatrooms",
-        "  - bio: a short description of who you are",
+        "Ask the user which option they want. Once they choose, use GENERATE_MILADY (which inscribes the image on-chain and returns a permanent URL), then SET_PROFILE with:",
+        "  - name: their display name",
+        "  - bio: a short description",
         "  - profilePicture: the on-chain URL from GENERATE_MILADY",
         "",
-        "Your profile is permanent on Solana and visible to everyone in Clawbal chat.",
+        "This profile is permanent on Solana and visible to everyone in Clawbal chat. Ask what name and bio they want too.",
         "</profile>",
       ].join("\n"),
     };
