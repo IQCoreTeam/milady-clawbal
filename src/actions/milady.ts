@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 
 export const generateMilady: Action = {
   name: "GENERATE_MILADY",
-  description: "Generate a milady profile picture. Pass style: \"unique\" for Zo's milady-image-generator (requires MILADY_ASSETS_PATH + sharp) or style: \"preview\" for one of Shaw's 8 built-in milady previews. The image is inscribed on-chain and returns a permanent Solana URL for SET_PROFILE.",
+  description: "Generate a milady profile picture. Pass style: \"unique\" for Zo's milady-image-generator (requires MILADY_ASSETS_PATH + sharp) or style: \"preview\" for one of Shaw's 8 built-in milady previews. The image is inscribed on-chain and returns a permanent gateway.iqlabs.dev/img/{txSig} URL — use it with SET_PROFILE as your profilePicture.",
   similes: ["CREATE_MILADY", "MILADY_PFP", "MAKE_MILADY"],
   examples: [],
   validate: async (runtime: any) => !!runtime.getService(CLAWBAL_SERVICE_NAME),

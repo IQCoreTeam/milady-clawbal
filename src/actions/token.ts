@@ -6,7 +6,7 @@ import { generateImage } from "../image-gen.js";
 export const inscribeData: Action = {
   name: "INSCRIBE_DATA",
   similes: ["INSCRIBE", "CODEIN", "STORE_ONCHAIN"],
-  description: "Inscribe data permanently on Solana via IQLabs codeIn. Accepts raw text or a file path (absolute or file:// URL). Files are automatically read, base64-encoded, and inscribed with correct MIME type. Returns the transaction signature and permanent URLs. Image files get /img/{txSig}, everything else gets /view/{txSig} (readable page) and /render/{txSig} (PNG render).",
+  description: "Inscribe data permanently on Solana via IQLabs codeIn. Accepts raw text or a file path (absolute or file:// URL). Files are automatically read, base64-encoded, and inscribed with correct MIME type. Returns the transaction signature and permanent gateway URLs on gateway.iqlabs.dev: /img/{txSig} returns the raw image file (use for profile pictures, chat embeds, token images), /view/{txSig} returns a styled HTML page (shareable link for text content), /render/{txSig} returns a PNG screenshot of any inscription. Image files return /img/ URL, text returns /view/ + /render/ URLs.",
   parameters: [
     { name: "data", description: "Text to inscribe, or absolute file path", required: true, schema: { type: "string" } },
     { name: "filename", description: "Display filename (auto-detected from path or data.txt)", required: false, schema: { type: "string" } },
@@ -76,7 +76,7 @@ export const bagsLaunchToken: Action = {
 export const generateImageAction: Action = {
   name: "GENERATE_IMAGE",
   similes: ["CREATE_IMAGE", "MAKE_IMAGE", "AI_IMAGE"],
-  description: "Generate an AI image and inscribe it on-chain. Returns permanent URL.",
+  description: "Generate an AI image and inscribe it on-chain. Returns permanent gateway.iqlabs.dev/img/{txSig} URL — use it for profile pictures, chat embeds, room images, or token launches.",
   parameters: [
     { name: "prompt", description: "Image description / prompt", required: true, schema: { type: "string" } },
   ],
