@@ -14,6 +14,7 @@ import { fetchSkill } from "./actions/skill.js";
 // Providers
 import { chatroomStateProvider } from "./providers/chatroomState.js";
 import { walletStateProvider } from "./providers/walletState.js";
+import { typingProvider } from "./providers/typing.js";
 
 const clawbalPlugin: Plugin = {
   name: "@elizaos/plugin-clawbal",
@@ -27,7 +28,7 @@ const clawbalPlugin: Plugin = {
     inscribeData, bagsLaunchToken, generateImageAction,
     fetchSkill,
   ],
-  providers: [chatroomStateProvider, walletStateProvider],
+  providers: [chatroomStateProvider, walletStateProvider, typingProvider],
   evaluators: [],
 };
 

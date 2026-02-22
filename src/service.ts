@@ -11,6 +11,7 @@ import {
   URLS, BAGS_BASE, IQLABS_FEE_WALLET, MIME_TYPES,
 } from "./constants.js";
 import { getClawbalSettings } from "./environment.js";
+import { connectNotiWs, disconnectNotiWs, sendTyping } from "./noti-ws.js";
 import {
   type ClawbalSettings, type ClawbalMessage, type ClawbalChatroom,
   type IQLabsSDK, type MoltbookPost, type MoltbookComment,
@@ -24,6 +25,13 @@ function resolveFilePath(input: string): string | null {
   if (p.startsWith("file://")) p = p.slice(7);
   if (p.startsWith("/") && existsSync(p)) return p;
   return null;
+}
+
+const FETCH_TIMEOUT = 30_000;
+function timedFetch(url: string, init?: RequestInit): Promise<Response> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT);
+  return fetch(url, { ...init, signal: ac.signal }).finally(() => clearTimeout(timer));
 }
 
 export class ClawbalService extends Service {
@@ -83,10 +91,13 @@ export class ClawbalService extends Service {
     }
     this.switchChatroom(this.settings.chatroom);
 
+    connectNotiWs();
     logger.info(`Clawbal service started — wallet ${this.keypair.publicKey.toBase58()}, room ${this.settings.chatroom}`);
   }
 
-  async stop(): Promise<void> { logger.info("Clawbal service stopped"); }
+  async stop(): Promise<void> { disconnectNotiWs(); logger.info("Clawbal service stopped"); }
+
+  emitTyping(typing = true): void { sendTyping(this.currentChatroom.name, this.settings.agentName, typing); }
 
   private buildChatroom(name: string): ClawbalChatroom {
     const tableSeed = sha256(`${CHATROOM_PREFIX}${name}`);
@@ -148,7 +159,7 @@ export class ClawbalService extends Service {
   async readMessages(limit = 15, chatroomName?: string): Promise<ClawbalMessage[]> {
     const room = chatroomName || this.currentChatroom.name;
     try {
-      const res = await fetch(`${URLS.base}/api/v1/messages?chatroom=${encodeURIComponent(room)}&limit=${limit}`);
+      const res = await timedFetch(`${URLS.base}/api/v1/messages?chatroom=${encodeURIComponent(room)}&limit=${limit}`);
       if (res.ok) { const d = await res.json(); return (d.messages || []) as ClawbalMessage[]; }
     } catch { /* fallback */ }
     if (this.iqlabs && this.currentChatroom.tablePda) {
@@ -214,7 +225,7 @@ export class ClawbalService extends Service {
 
   async moltbookPost(submolt: string, title: string, content: string): Promise<string> {
     const token = this.getMoltbookToken();
-    const res = await fetch(`${URLS.moltbook}/posts`, {
+    const res = await timedFetch(`${URLS.moltbook}/posts`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ submolt, title, content }),
@@ -228,7 +239,7 @@ export class ClawbalService extends Service {
     const url = submolt
       ? `${URLS.moltbook}/submolts/${submolt}/feed?sort=${sort}&limit=10`
       : `${URLS.moltbook}/posts?sort=${sort}&limit=10`;
-    const res = await fetch(url);
+    const res = await timedFetch(url);
     const d = await res.json();
     return (d.posts || []) as MoltbookPost[];
   }
@@ -237,7 +248,7 @@ export class ClawbalService extends Service {
     const token = this.getMoltbookToken();
     const body: Record<string, string> = { content };
     if (parentId) body.parent_id = parentId;
-    const res = await fetch(`${URLS.moltbook}/posts/${postId}/comments`, {
+    const res = await timedFetch(`${URLS.moltbook}/posts/${postId}/comments`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -248,7 +259,7 @@ export class ClawbalService extends Service {
   }
 
   async moltbookReadPost(postId: string): Promise<{ post: MoltbookPost; comments: MoltbookComment[] }> {
-    const res = await fetch(`${URLS.moltbook}/posts/${postId}`);
+    const res = await timedFetch(`${URLS.moltbook}/posts/${postId}`);
     const d = await res.json();
     if (!d.post) throw new Error("Post not found");
     return { post: d.post as MoltbookPost, comments: (d.comments || []) as MoltbookComment[] };
@@ -256,20 +267,20 @@ export class ClawbalService extends Service {
 
   // ─── PnL ───
   async tokenLookup(tokenCA: string): Promise<Record<string, unknown>> {
-    const res = await fetch(`${URLS.pnl}/tokens/${tokenCA}`);
+    const res = await timedFetch(`${URLS.pnl}/tokens/${tokenCA}`);
     if (!res.ok) throw new Error(`Token lookup failed (${res.status})`);
     return (await res.json()) as Record<string, unknown>;
   }
 
   async pnlCheck(wallet?: string): Promise<Record<string, unknown>> {
     const w = wallet || this.getWalletAddress();
-    const res = await fetch(`${URLS.pnl}/pnl/${w}`);
+    const res = await timedFetch(`${URLS.pnl}/pnl/${w}`);
     if (!res.ok) throw new Error(`PnL check failed (${res.status})`);
     return (await res.json()) as Record<string, unknown>;
   }
 
   async pnlLeaderboard(): Promise<Record<string, unknown>[]> {
-    const res = await fetch(`${URLS.pnl}/leaderboard`);
+    const res = await timedFetch(`${URLS.pnl}/leaderboard`);
     if (!res.ok) throw new Error(`Leaderboard failed (${res.status})`);
     const d = (await res.json()) as { leaderboard?: Record<string, unknown>[] };
     return d.leaderboard || [];
@@ -285,7 +296,7 @@ export class ClawbalService extends Service {
     const img = imageUrl || `${URLS.base}/iqmolt.png`;
 
     const fetchBags = async <T>(path: string, body?: Record<string, unknown>): Promise<T> => {
-      const res = await fetch(`${BAGS_BASE}${path}`, {
+      const res = await timedFetch(`${BAGS_BASE}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": apiKey },
         body: JSON.stringify(body),
