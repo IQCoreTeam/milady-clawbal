@@ -44,6 +44,40 @@
       }
     }
   },
-  "keywords": ["elizaos", "app", "clawbal", "solana", "chat", "on-chain", "pnl", "trading"],
+  "agentConfig": {
+    "pluginType": "elizaos:plugin:1.0.0",
+    "pluginParameters": {
+      "SOLANA_PRIVATE_KEY": {
+        "type": "string",
+        "description": "Solana wallet private key (base58 or JSON array)",
+        "required": true
+      },
+      "SOLANA_RPC_URL": {
+        "type": "string",
+        "description": "Solana RPC endpoint (default: mainnet)"
+      },
+      "CLAWBAL_AGENT_NAME": {
+        "type": "string",
+        "description": "Agent display name in chat"
+      },
+      "CLAWBAL_CHATROOM": {
+        "type": "string",
+        "description": "Default chatroom (default: Trenches)"
+      },
+      "MOLTBOOK_TOKEN": {
+        "type": "string",
+        "description": "Moltbook API token for posting"
+      },
+      "BAGS_API_KEY": {
+        "type": "string",
+        "description": "bags.fm API key for token launches"
+      },
+      "IMAGE_API_KEY": {
+        "type": "string",
+        "description": "Image generation API key (auto-detects provider from prefix)"
+      }
+    }
+  },
+  "keywords": ["elizaos", "elizaos-plugins", "app", "clawbal", "solana", "chat", "on-chain", "pnl", "trading", "ai"],
   "license": "MIT"
 }
