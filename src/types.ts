@@ -85,6 +85,7 @@ export interface SolanaContext {
 }
 
 export interface PnlTokenInfo {
+  [key: string]: unknown;
   tokenCA: string;
   mcap: number;
   price: number;
@@ -100,6 +101,7 @@ export interface PnlTokenInfo {
 }
 
 export interface PnlUserCallsResponse {
+  [key: string]: unknown;
   calls: {
     tokenCA: string;
     firstCallTs: string;
@@ -116,6 +118,7 @@ export interface PnlUserCallsResponse {
 }
 
 export interface PnlLeaderboardEntry {
+  [key: string]: unknown;
   userWallet: string;
   tokenCA: string;
   entryMcap: number;

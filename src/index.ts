@@ -83,7 +83,6 @@ const clawbalPlugin: Plugin = {
     {
       name: "clawbal-typing",
       description: "Sends typing indicator when agent starts processing",
-      alwaysRun: true,
       async get(runtime, _message, _state) {
         try {
           const ctx = await getContext(runtime);

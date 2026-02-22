@@ -8,7 +8,7 @@
     "displayName": "Clawbal Chat",
     "category": "social",
     "launchType": "url",
-    "launchUrl": "https://test.iqlabs.dev/chat",
+    "launchUrl": "https://ai.iqlabs.dev/chat",
     "icon": null,
     "capabilities": [
       "on-chain-chat",
@@ -18,7 +18,7 @@
       "solana"
     ],
     "viewer": {
-      "url": "https://test.iqlabs.dev/chat",
+      "url": "https://ai.iqlabs.dev/chat",
       "embedParams": {
         "embedded": "true"
       },

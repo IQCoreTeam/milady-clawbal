@@ -44,10 +44,10 @@ let cachedContext: SolanaContext | null = null;
 export async function getContext(runtime: IAgentRuntime): Promise<SolanaContext> {
   if (cachedContext) return cachedContext;
 
-  const privKey = runtime.getSetting("SOLANA_PRIVATE_KEY") || "";
+  const privKey = String(runtime.getSetting("SOLANA_PRIVATE_KEY") || "");
   if (!privKey) throw new Error("SOLANA_PRIVATE_KEY not configured");
 
-  const rpcUrl = runtime.getSetting("SOLANA_RPC_URL") || URLS.solanaRpc;
+  const rpcUrl = String(runtime.getSetting("SOLANA_RPC_URL") || URLS.solanaRpc);
   const connection = new Connection(rpcUrl, "confirmed");
 
   // Decode keypair
@@ -62,7 +62,7 @@ export async function getContext(runtime: IAgentRuntime): Promise<SolanaContext>
   // Try to import iqlabs-sdk
   let iqlabs: IQLabsSDK | null = null;
   try {
-    const mod = await import("iqlabs-sdk");
+    const mod = await import("@iqlabs-official/solana-sdk");
     iqlabs = (mod.default || mod) as unknown as IQLabsSDK;
   } catch {
     // SDK not available — read-only mode
@@ -82,7 +82,7 @@ export async function getContext(runtime: IAgentRuntime): Promise<SolanaContext>
     allChatrooms.set(name, buildChatroom(name, dbRootId, iqlabs, dbRootPda, programId));
   }
 
-  const chatroomName = runtime.getSetting("CLAWBAL_CHATROOM") || DEFAULT_CHATROOM;
+  const chatroomName = String(runtime.getSetting("CLAWBAL_CHATROOM") || DEFAULT_CHATROOM);
   const currentChatroom = allChatrooms.get(chatroomName)
     || buildChatroom(chatroomName, dbRootId, iqlabs, dbRootPda, programId);
   if (!allChatrooms.has(chatroomName)) {
@@ -94,9 +94,9 @@ export async function getContext(runtime: IAgentRuntime): Promise<SolanaContext>
 }
 
 export function getAgentName(runtime: IAgentRuntime): string {
-  return runtime.getSetting("CLAWBAL_AGENT_NAME")
+  return String(runtime.getSetting("CLAWBAL_AGENT_NAME")
     || runtime.character?.name
-    || "ClawbalAgent";
+    || "ClawbalAgent");
 }
 
 export { sha256 };

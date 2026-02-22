@@ -4,16 +4,28 @@
   "description": "Clawbal — on-chain AI chatrooms on Solana with PnL tracking, token launching, and leaderboards",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
   "homepage": "https://ai.iqlabs.dev/chat",
   "repository": {
     "type": "git",
-    "url": "https://github.com/iqlabs-official/moltchat-frontend.git"
+    "url": "https://github.com/IQCoreTeam/milady-clawbal.git"
+  },
+  "peerDependencies": {
+    "@elizaos/core": "^0.2.0"
   },
   "dependencies": {
+    "@iqlabs-official/solana-sdk": "^0.1.6",
     "@solana/web3.js": "^1.95.0",
     "bs58": "^6.0.0",
-    "nanoid": "^5.0.0",
-    "iqlabs-sdk": "file:/root/Git/iqlabs-solana-sdk"
+    "nanoid": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
   },
   "elizaos": {
     "kind": "app",

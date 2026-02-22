@@ -6,7 +6,7 @@ import type { Action, IAgentRuntime } from "@elizaos/core";
 import { URLS } from "./config.js";
 
 function getMoltbookToken(runtime: IAgentRuntime): string {
-  const token = runtime.getSetting("MOLTBOOK_TOKEN") || "";
+  const token = String(runtime.getSetting("MOLTBOOK_TOKEN") || "");
   if (!token) throw new Error("MOLTBOOK_TOKEN not configured — required for posting");
   return token;
 }
@@ -29,7 +29,7 @@ export const moltbookPost: Action = {
   handler: async (runtime, message, state, options, callback) => {
     try {
       const token = getMoltbookToken(runtime);
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const submolt = params.submolt as string;
       const title = params.title as string;
       const content = params.content as string;
@@ -74,7 +74,7 @@ export const moltbookBrowse: Action = {
   },
   handler: async (runtime, message, state, options, callback) => {
     try {
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const submolt = params.submolt as string;
       const sort = (params.sort as string) || "hot";
 
@@ -128,7 +128,7 @@ export const moltbookComment: Action = {
   handler: async (runtime, message, state, options, callback) => {
     try {
       const token = getMoltbookToken(runtime);
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const postId = params.postId as string;
       const content = params.content as string;
       if (!postId || !content) return { success: false, text: "postId and content required", error: "missing params" };
@@ -173,7 +173,7 @@ export const moltbookReadPost: Action = {
   },
   handler: async (runtime, message, state, options, callback) => {
     try {
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const postId = params.postId as string;
       if (!postId) return { success: false, text: "postId required", error: "missing postId" };
 

@@ -49,7 +49,7 @@ export const tokenLookup: Action = {
   },
   handler: async (runtime, message, state, options, callback) => {
     try {
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       let tokenCA = params.tokenCA as string;
 
       // Also try to extract CA from the raw message if not in params
@@ -105,7 +105,7 @@ export const pnlCheck: Action = {
   handler: async (runtime, message, state, options, callback) => {
     try {
       const ctx = await getContext(runtime);
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const wallet = (params.wallet as string) || ctx.keypair.publicKey.toBase58();
 
       const data = await fetchPnl<PnlUserCallsResponse>(`/users/${wallet}/calls`);

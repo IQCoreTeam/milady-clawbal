@@ -33,7 +33,7 @@ export const fetchSkill: Action = {
   },
   handler: async (_runtime, _message, _state, options, callback) => {
     try {
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const skill = params.skill as string;
       if (!skill || !SKILL_NAMES.includes(skill as SkillName)) {
         return { success: false, text: `Invalid skill. Choose one of: ${SKILL_NAMES.join(", ")}`, error: "invalid skill" };

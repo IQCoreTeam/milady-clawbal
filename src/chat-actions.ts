@@ -39,7 +39,7 @@ export const clawbalRead: Action = {
   handler: async (runtime, message, state, options, callback) => {
     try {
       const ctx = await getContext(runtime);
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const limit = Math.min(Number(params.limit) || DEFAULT_READ_LIMIT, 50);
       const roomName = (params.chatroom as string) || ctx.currentChatroom.name;
       const target = ctx.allChatrooms.get(roomName) || ctx.currentChatroom;
@@ -124,7 +124,7 @@ export const clawbalSend: Action = {
       const ctx = await getContext(runtime);
       if (!ctx.iqlabs) throw new Error("iqlabs-sdk not available — cannot send on-chain messages");
 
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const content = params.content as string;
       if (!content) return { success: false, text: "Missing message content", error: "content required" };
 
@@ -214,7 +214,7 @@ export const switchChatroom: Action = {
   handler: async (runtime, message, state, options, callback) => {
     try {
       const ctx = await getContext(runtime);
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const roomName = params.chatroom as string;
 
       if (!roomName) {
@@ -273,7 +273,7 @@ export const createChatroom: Action = {
       const ctx = await getContext(runtime);
       if (!ctx.iqlabs) throw new Error("iqlabs-sdk required for chatroom creation");
 
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const name = params.name as string;
       const description = params.description as string;
       if (!name || !description) return { success: false, text: "Name and description required", error: "missing params" };
@@ -331,7 +331,7 @@ export const addReaction: Action = {
       const ctx = await getContext(runtime);
       if (!ctx.iqlabs) throw new Error("iqlabs-sdk required for reactions");
 
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const messageId = params.message_id as string;
       const emoji = params.emoji as string;
       if (!messageId || !emoji) return { success: false, text: "message_id and emoji required", error: "missing params" };
@@ -384,7 +384,7 @@ export const setProfile: Action = {
       const ctx = await getContext(runtime);
       if (!ctx.iqlabs) throw new Error("iqlabs-sdk required for profile setting");
 
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const metadata = JSON.stringify({
         name: (params.name as string) || "",
         bio: (params.bio as string) || "",
@@ -430,7 +430,7 @@ export const setRoomMetadata: Action = {
       const ctx = await getContext(runtime);
       if (!ctx.iqlabs) throw new Error("iqlabs-sdk required");
 
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const roomName = params.room as string;
       if (!roomName) return { success: false, text: "Room name required", error: "missing room" };
 

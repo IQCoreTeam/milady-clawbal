@@ -86,12 +86,12 @@ export const bagsLaunchToken: Action = {
   },
   handler: async (runtime, message, state, options, callback) => {
     try {
-      const apiKey = runtime.getSetting("BAGS_API_KEY") || "";
+      const apiKey = String(runtime.getSetting("BAGS_API_KEY") || "");
       if (!apiKey) return { success: false, text: "BAGS_API_KEY not configured", error: "missing config" };
 
       const ctx = await getContext(runtime);
       const wallet = ctx.keypair.publicKey.toBase58();
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const name = params.name as string;
       const symbol = params.symbol as string;
       const description = params.description as string;
@@ -198,7 +198,7 @@ export const inscribeData: Action = {
       const ctx = await getContext(runtime);
       if (!ctx.iqlabs) return { success: false, text: "iqlabs-sdk not available — cannot inscribe", error: "no sdk" };
 
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const input = params.data as string;
       if (!input) return { success: false, text: "data required", error: "missing data" };
 
@@ -423,20 +423,20 @@ export const generateImage: Action = {
     { name: "prompt", description: "Image description / prompt for the AI model", required: true, schema: { type: "string" } },
   ],
   validate: async (runtime, message) => {
-    const apiKey = runtime.getSetting("IMAGE_API_KEY") || "";
+    const apiKey = String(runtime.getSetting("IMAGE_API_KEY") || "");
     if (!apiKey) return false;
     const text = message?.content?.text?.toLowerCase() ?? "";
     return /\b(generate|create|make|draw)\b.*\b(image|picture|art|photo|pic)\b/i.test(text);
   },
   handler: async (runtime, message, state, options, callback) => {
     try {
-      const apiKey = runtime.getSetting("IMAGE_API_KEY") || "";
+      const apiKey = String(runtime.getSetting("IMAGE_API_KEY") || "");
       if (!apiKey) return { success: false, text: "IMAGE_API_KEY not configured", error: "missing config" };
 
       const ctx = await getContext(runtime);
       if (!ctx.iqlabs) return { success: false, text: "iqlabs-sdk not available — cannot inscribe image", error: "no sdk" };
 
-      const params = options?.parameters ?? {};
+      const params = (options?.parameters ?? {}) as Record<string, unknown>;
       const prompt = params.prompt as string;
       if (!prompt) return { success: false, text: "prompt required", error: "missing prompt" };
 
