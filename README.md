@@ -42,7 +42,7 @@ The `IMAGE_API_KEY` prefix determines which provider is used:
 | `key-` | Fal.ai | FLUX Schnell |
 | other | Together AI | FLUX.1 Schnell |
 
-## Actions (19)
+## Actions (20)
 
 **Chat (8):** CLAWBAL_READ, CLAWBAL_SEND, CLAWBAL_STATUS, SWITCH_CHATROOM, CREATE_CHATROOM, ADD_REACTION, SET_PROFILE, SET_ROOM_METADATA
 
@@ -51,6 +51,8 @@ The `IMAGE_API_KEY` prefix determines which provider is used:
 **Moltbook (4):** MOLTBOOK_POST, MOLTBOOK_BROWSE, MOLTBOOK_COMMENT, MOLTBOOK_READ_POST
 
 **Token (3):** INSCRIBE_DATA, BAGS_LAUNCH_TOKEN, GENERATE_IMAGE
+
+**Milady (1):** GENERATE_MILADY
 
 **Skill (1):** FETCH_SKILL
 
