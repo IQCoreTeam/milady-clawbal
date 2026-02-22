@@ -1,4 +1,4 @@
-import type { Action } from "@elizaos/core";
+import type { Action, IAgentRuntime, Memory, State, HandlerCallback } from "@elizaos/core";
 import { CLAWBAL_SERVICE_NAME, URLS } from "../constants.js";
 import type { ClawbalService } from "../service.js";
 import { existsSync, readdirSync } from "fs";
@@ -10,15 +10,14 @@ export const generateMilady: Action = {
   description: "Generate a milady profile picture. Pass style: \"unique\" for Zo's milady-image-generator (requires MILADY_ASSETS_PATH + sharp) or style: \"preview\" for one of Shaw's 8 built-in milady previews. The image is inscribed on-chain and returns a permanent gateway.iqlabs.dev/img/{txSig} URL — use it with SET_PROFILE as your profilePicture.",
   similes: ["CREATE_MILADY", "MILADY_PFP", "MAKE_MILADY"],
   examples: [],
-  validate: async (runtime: any) => !!runtime.getService(CLAWBAL_SERVICE_NAME),
-  handler: async (runtime: any, _msg: any, _state: any, options: any, callback: any) => {
+  validate: async (runtime: IAgentRuntime) => !!runtime.getService(CLAWBAL_SERVICE_NAME),
+  handler: async (runtime: IAgentRuntime, _msg: Memory, _state: State | undefined, options: Record<string, unknown> | undefined, callback?: HandlerCallback) => {
     const svc = runtime.getService(CLAWBAL_SERVICE_NAME) as ClawbalService;
     const settings = svc.getSettings();
-    const style = (options?.style || "").toLowerCase();
+    const style = String(options?.style || "").toLowerCase();
     let pfpPath = "";
     let method = "";
 
-    // "unique" — Zo's milady-image-generator from layer assets
     if (style !== "preview") {
       const assetsPath = settings.miladyAssetsPath;
       if (assetsPath) {
@@ -28,15 +27,15 @@ export const generateMilady: Action = {
             pfpPath = await generateMiladyPFP(assetsPath);
             method = "generated unique milady from layer assets";
           }
-        } catch { /* fall through */ }
+        } catch { /* sharp not available, fall through */ }
       }
       if (!pfpPath && style === "unique") {
-        callback({ text: "Unique generation not available. Set MILADY_ASSETS_PATH and install sharp, or try style: \"preview\"." });
-        return;
+        const text = "Unique generation not available. Set MILADY_ASSETS_PATH and install sharp, or try style: \"preview\".";
+        callback?.({ text });
+        return { success: false, text };
       }
     }
 
-    // "preview" — Shaw's built-in milady previews
     if (!pfpPath) {
       const pluginDir = dirname(fileURLToPath(import.meta.url));
       const pfpDir = join(pluginDir, "..", "..", "pfp");
@@ -51,17 +50,21 @@ export const generateMilady: Action = {
     }
 
     if (!pfpPath || !existsSync(pfpPath)) {
-      callback({ text: "No milady assets found. Set MILADY_ASSETS_PATH for unique generation or ensure the pfp/ directory exists." });
-      return;
+      const text = "No milady assets found. Set MILADY_ASSETS_PATH for unique generation or ensure the pfp/ directory exists.";
+      callback?.({ text });
+      return { success: false, text };
     }
 
-    // Inscribe on-chain
     try {
       const result = await svc.inscribeData(pfpPath, "milady-pfp.png");
       const url = `${URLS.gateway}/${result.isImage ? "img" : "view"}/${result.txSig}`;
-      callback({ text: `Milady PFP ready! ${method}\n\nOn-chain URL: ${url}\n\nUse SET_PROFILE with this URL as your profilePicture.` });
+      const text = `Milady PFP ready! ${method}\n\nOn-chain URL: ${url}\n\nUse SET_PROFILE with this URL as your profilePicture.`;
+      callback?.({ text });
+      return { success: true, text };
     } catch (err) {
-      callback({ text: `Milady generated but inscription failed: ${err}` });
+      const text = `Milady generated but inscription failed: ${err instanceof Error ? err.message : String(err)}`;
+      callback?.({ text });
+      return { success: false, text };
     }
   },
 };

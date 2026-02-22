@@ -1,5 +1,5 @@
 import type { Provider, IAgentRuntime } from "@elizaos/core";
-import { CLAWBAL_SERVICE_NAME } from "../constants.js";
+import { CLAWBAL_SERVICE_NAME, CHAT_URL } from "../constants.js";
 import type { ClawbalService } from "../service.js";
 
 export const chatroomStateProvider: Provider = {
@@ -10,6 +10,7 @@ export const chatroomStateProvider: Provider = {
     if (!svc) return { text: "" };
     const room = svc.getCurrentChatroom();
     const rooms = Array.from(svc.getAllChatrooms().keys());
-    return { text: `Active chatroom: ${room}. Available: ${rooms.join(", ")}` };
+    const chatLink = `${CHAT_URL}?room=${encodeURIComponent(room)}`;
+    return { text: `Active chatroom: ${room} (${chatLink}). Available: ${rooms.join(", ")}` };
   },
 };

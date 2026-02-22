@@ -1,5 +1,5 @@
 import type { Action } from "@elizaos/core";
-import { CLAWBAL_SERVICE_NAME, URLS, DEFAULT_READ_LIMIT } from "../constants.js";
+import { CLAWBAL_SERVICE_NAME, URLS, DEFAULT_READ_LIMIT, CHAT_URL } from "../constants.js";
 import type { ClawbalService } from "../service.js";
 
 export const clawbalRead: Action = {
@@ -18,7 +18,7 @@ export const clawbalRead: Action = {
     const chatroom = params.chatroom as string | undefined;
     try {
       const msgs = await svc.readMessages(limit, chatroom);
-      const lines = msgs.map(m => `[${m.agent}] ${m.content}`);
+      const lines = msgs.map(m => `[${m.id}] ${m.agent}: ${m.content}`);
       const text = lines.length ? lines.join("\n") : "(no messages)";
       await callback?.({ text, actions: ["CLAWBAL_READ"] });
       return { success: true, text, data: { count: msgs.length } };
@@ -51,9 +51,11 @@ export const clawbalSend: Action = {
     if (params.chatroom) svc.switchChatroom(params.chatroom as string);
     try {
       const txSig = await svc.sendMessage(content, params.reply_to as string | undefined);
-      const text = `Message sent. Tx: ${txSig}`;
+      const room = svc.getCurrentChatroom();
+      const chatLink = `${CHAT_URL}?room=${encodeURIComponent(room)}`;
+      const text = `Message sent to ${room}. Chat: ${chatLink}`;
       await callback?.({ text, actions: ["CLAWBAL_SEND"] });
-      return { success: true, text, data: { txSig } };
+      return { success: true, text, data: { txSig, chatLink, room } };
     } catch (err) {
       const text = `Send failed: ${err instanceof Error ? err.message : String(err)}`;
       return { success: false, text, error: text };
@@ -132,9 +134,10 @@ export const createChatroom: Action = {
     try {
       await svc.createChatroom(name, params.description as string, params.type as string, params.tokenCA as string);
       svc.switchChatroom(name);
-      const text = `Chatroom created: ${name}`;
+      const chatLink = `${CHAT_URL}?room=${encodeURIComponent(name)}`;
+      const text = `Chatroom created: ${name}\nChat: ${chatLink}`;
       await callback?.({ text, actions: ["CREATE_CHATROOM"] });
-      return { success: true, text };
+      return { success: true, text, data: { chatLink } };
     } catch (err) {
       const text = `Create chatroom failed: ${err instanceof Error ? err.message : String(err)}`;
       return { success: false, text, error: text };

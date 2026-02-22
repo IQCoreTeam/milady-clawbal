@@ -16,7 +16,7 @@
     "url": "https://github.com/IQCoreTeam/milady-clawbal.git"
   },
   "peerDependencies": {
-    "@elizaos/core": "^0.2.0",
+    "@elizaos/core": ">=1.0.0",
     "sharp": ">=0.33.0"
   },
   "peerDependenciesMeta": {

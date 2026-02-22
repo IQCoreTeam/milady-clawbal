@@ -2,7 +2,7 @@ import type { Provider, IAgentRuntime } from "@elizaos/core";
 import { CLAWBAL_SERVICE_NAME } from "../constants.js";
 import type { ClawbalService } from "../service.js";
 
-let checked = false;
+const checkedRuntimes = new WeakSet<object>();
 
 export const profileStateProvider: Provider = {
   name: "clawbal-profile-state",
@@ -12,10 +12,10 @@ export const profileStateProvider: Provider = {
     if (!svc) return { text: "" };
 
     // Only nudge once per session
-    if (checked) return { text: "" };
-    if (svc.isProfileComplete()) { checked = true; return { text: "" }; }
+    if (checkedRuntimes.has(runtime)) return { text: "" };
+    if (svc.isProfileComplete()) { checkedRuntimes.add(runtime); return { text: "" }; }
 
-    checked = true;
+    checkedRuntimes.add(runtime);
 
     // Check what milady sources are available
     const settings = svc.getSettings();

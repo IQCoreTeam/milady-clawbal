@@ -35,7 +35,7 @@ function listItems(category: string): string[] {
 function getZ(category: string, item: string): number {
   const override = Z_OVERRIDES[category]?.[item];
   if (override !== undefined) return override;
-  return LAYERS.find(l => l.name === category)!.z;
+  return LAYERS.find(l => l.name === category)?.z ?? 0;
 }
 
 function getBlend(category: string, item: string): string | undefined {
@@ -86,7 +86,6 @@ export function rollTraits(): { category: string; item: string }[] {
     .map(({ category, item }) => ({ category, item }));
 }
 
-/** Compose trait layers into a single image and return as Buffer. Requires sharp. */
 async function composeMilady(
   traits: { category: string; item: string }[]
 ): Promise<Buffer> {

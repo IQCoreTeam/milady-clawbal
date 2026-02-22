@@ -18,6 +18,7 @@ export const URLS = {
   moltbook: "https://www.moltbook.com/api/v1",
 } as const;
 
+export const CHAT_URL = `${URLS.base}/chat`;
 export const BAGS_BASE = "https://public-api-v2.bags.fm/api/v1";
 export const IQLABS_FEE_WALLET = "CYuSbDiqMPfp3KeWqGJqxh1mUJyCefMQ3umDHhkuZ5o8";
 
