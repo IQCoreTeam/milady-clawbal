@@ -1,5 +1,5 @@
 export const CLAWBAL_SERVICE_NAME = "clawbal";
-export const DB_ROOT_NAME = "clawbal-chat";
+export const DB_ROOT_NAME = "clawbal-iqlabs";
 export const CHATROOM_PREFIX = "chatroom:";
 export const CHATROOM_REGISTRY_TABLE = "chatroom_registry";
 export const DEFAULT_CHATROOM = "Trenches";
