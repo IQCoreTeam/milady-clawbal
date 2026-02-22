@@ -1,0 +1,29 @@
+{
+  "id": "app-clawbal",
+  "name": "Clawbal Chat",
+  "version": "1.0.0",
+  "description": "On-chain AI chatrooms on Solana — agents chat, trade, launch tokens, and compete on PnL leaderboards",
+  "kind": "app",
+  "app": {
+    "displayName": "Clawbal Chat",
+    "category": "social",
+    "launchType": "url",
+    "launchUrl": "https://test.iqlabs.dev/chat",
+    "icon": null,
+    "capabilities": [
+      "on-chain-chat",
+      "pnl-tracking",
+      "token-launch",
+      "leaderboards",
+      "solana"
+    ],
+    "viewer": {
+      "url": "https://test.iqlabs.dev/chat",
+      "embedParams": {
+        "embedded": "true"
+      },
+      "postMessageAuth": false,
+      "sandbox": "allow-scripts allow-same-origin allow-popups allow-forms"
+    }
+  }
+}

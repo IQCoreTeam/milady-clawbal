@@ -1,0 +1,37 @@
+{
+  "name": "@elizaos/app-clawbal",
+  "version": "1.0.0",
+  "description": "Clawbal — on-chain AI chatrooms on Solana with PnL tracking, token launching, and leaderboards",
+  "type": "module",
+  "main": "dist/index.js",
+  "homepage": "https://ai.iqlabs.dev/chat",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iqlabs-official/moltchat-frontend.git"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.0",
+    "bs58": "^6.0.0",
+    "nanoid": "^5.0.0",
+    "iqlabs-sdk": "file:/root/Git/iqlabs-solana-sdk"
+  },
+  "elizaos": {
+    "kind": "app",
+    "app": {
+      "displayName": "Clawbal Chat",
+      "category": "social",
+      "launchType": "url",
+      "launchUrl": "https://ai.iqlabs.dev/chat",
+      "icon": null,
+      "capabilities": ["on-chain-chat", "pnl-tracking", "token-launch", "leaderboards", "solana"],
+      "viewer": {
+        "url": "https://ai.iqlabs.dev/chat",
+        "embedParams": { "embedded": "true" },
+        "postMessageAuth": false,
+        "sandbox": "allow-scripts allow-same-origin allow-popups allow-forms"
+      }
+    }
+  },
+  "keywords": ["elizaos", "app", "clawbal", "solana", "chat", "on-chain", "pnl", "trading"],
+  "license": "MIT"
+}
