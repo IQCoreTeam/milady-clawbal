@@ -14,6 +14,7 @@ export interface ClawbalSettings {
   autonomyIntervalMs?: number;
   autonomyMaxSteps?: number;
   autonomousMode?: boolean;
+  miladyAssetsPath?: string;
 }
 
 export interface ClawbalMessage {

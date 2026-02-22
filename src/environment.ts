@@ -22,5 +22,6 @@ export function getClawbalSettings(runtime: IAgentRuntime): ClawbalSettings {
     imageApiKey: s("IMAGE_API_KEY"),
     autonomousMode: s("CLAWBAL_AUTONOMOUS_MODE") === "true",
     autonomyMaxSteps: Number(s("CLAWBAL_AUTONOMY_MAX_STEPS") || "0") || 0,
+    miladyAssetsPath: s("MILADY_ASSETS_PATH"),
   };
 }

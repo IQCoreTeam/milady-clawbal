@@ -1,8 +1,9 @@
 import { type IAgentRuntime, Service, logger } from "@elizaos/core";
 import { Connection, Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { createHash } from "crypto";
-import { readFileSync, existsSync } from "fs";
-import { basename, extname } from "path";
+import { readFileSync, existsSync, readdirSync } from "fs";
+import { basename, extname, join, dirname } from "path";
+import { fileURLToPath } from "url";
 import { nanoid } from "nanoid";
 import bs58 from "bs58";
 
@@ -93,6 +94,88 @@ export class ClawbalService extends Service {
 
     connectNotiWs();
     logger.info(`Clawbal service started — wallet ${this.keypair.publicKey.toBase58()}, room ${this.settings.chatroom}`);
+
+    // Auto-setup on-chain profile (fire-and-forget)
+    this.autoSetupProfile().catch(err => logger.warn(`Profile auto-setup skipped: ${err}`));
+  }
+
+  private async autoSetupProfile(): Promise<void> {
+    if (!this.iqlabs) return;
+    const wallet = this.getWalletAddress();
+
+    // Check if profile already exists on gateway
+    try {
+      const res = await timedFetch(`${URLS.gateway}/user/${wallet}/state`);
+      if (res.ok) {
+        const state = (await res.json()) as { profileData?: string | Record<string, unknown> };
+        if (state?.profileData) {
+          const profile = typeof state.profileData === "string"
+            ? JSON.parse(state.profileData) as Record<string, unknown>
+            : state.profileData;
+          if (profile?.name && profile?.profilePicture) {
+            logger.info("On-chain profile already complete, skipping auto-setup");
+            return;
+          }
+        }
+      }
+    } catch { /* gateway unreachable, try setting anyway */ }
+
+    // Generate milady PFP — try unique generation first, fall back to bundled previews
+    const pluginDir = dirname(fileURLToPath(import.meta.url));
+    let pfpUrl = "";
+    let pfpPath = "";
+
+    // 1. Try milady-image-generator (sharp + layer assets)
+    const assetsPath = this.settings.miladyAssetsPath;
+    if (assetsPath) {
+      try {
+        const { canGenerateMilady, generateMiladyPFP } = await import("./milady-gen.js");
+        if (await canGenerateMilady(assetsPath)) {
+          pfpPath = await generateMiladyPFP(assetsPath);
+          logger.info(`Generated unique milady PFP: ${pfpPath}`);
+        }
+      } catch (err) {
+        logger.warn(`Milady generation failed, falling back to previews: ${err}`);
+      }
+    }
+
+    // 2. Fall back to bundled preview PNGs
+    if (!pfpPath) {
+      const pfpDir = join(pluginDir, "..", "pfp");
+      if (existsSync(pfpDir)) {
+        const pfps = readdirSync(pfpDir).filter(f => f.endsWith(".png"));
+        if (pfps.length > 0) {
+          const pick = pfps[Math.floor(Math.random() * pfps.length)];
+          pfpPath = join(pfpDir, pick);
+          logger.info(`Using bundled milady preview: ${pick}`);
+        }
+      }
+    }
+
+    // 3. Inscribe PFP on-chain
+    if (pfpPath && existsSync(pfpPath)) {
+      try {
+        const fileData = readFileSync(pfpPath);
+        const b64 = fileData.toString("base64");
+        const txSig = await this.iqlabs.writer.codeIn(
+          { connection: this.connection, signer: this.keypair },
+          b64, "milady-pfp.png", 0, "image/png",
+        );
+        pfpUrl = `${URLS.base}/img/${txSig}`;
+        logger.info(`Milady PFP inscribed on-chain: ${pfpUrl}`);
+      } catch (err) {
+        logger.warn(`PFP inscription failed: ${err}`);
+      }
+    }
+
+    // Set on-chain profile
+    try {
+      const name = this.settings.agentName;
+      await this.setProfile(name, "", pfpUrl);
+      logger.info(`On-chain profile set: ${name}${pfpUrl ? " with milady PFP" : ""}`);
+    } catch (err) {
+      logger.warn(`Profile set failed: ${err}`);
+    }
   }
 
   async stop(): Promise<void> { disconnectNotiWs(); logger.info("Clawbal service stopped"); }

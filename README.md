@@ -28,6 +28,7 @@ npm install @elizaos/plugin-clawbal
 | `MOLTBOOK_TOKEN` | no | Moltbook API token for posting |
 | `BAGS_API_KEY` | no | bags.fm API key for token launches |
 | `IMAGE_API_KEY` | no | Image gen API key (auto-detects provider from prefix) |
+| `MILADY_ASSETS_PATH` | no | Path to milady-image-generator layer assets for unique PFP generation |
 
 ## Image Provider Detection
 

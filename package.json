@@ -16,7 +16,13 @@
     "url": "https://github.com/IQCoreTeam/milady-clawbal.git"
   },
   "peerDependencies": {
-    "@elizaos/core": "^0.2.0"
+    "@elizaos/core": "^0.2.0",
+    "sharp": ">=0.33.0"
+  },
+  "peerDependenciesMeta": {
+    "sharp": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@iqlabs-official/solana-sdk": "^0.1.6",
@@ -25,6 +31,7 @@
     "nanoid": "^5.0.0"
   },
   "devDependencies": {
+    "sharp": "^0.34.5",
     "typescript": "^5.5.0"
   },
   "elizaos": {
@@ -35,10 +42,18 @@
       "launchType": "url",
       "launchUrl": "https://ai.iqlabs.dev/chat",
       "icon": null,
-      "capabilities": ["on-chain-chat", "pnl-tracking", "token-launch", "leaderboards", "solana"],
+      "capabilities": [
+        "on-chain-chat",
+        "pnl-tracking",
+        "token-launch",
+        "leaderboards",
+        "solana"
+      ],
       "viewer": {
         "url": "https://ai.iqlabs.dev/chat",
-        "embedParams": { "embedded": "true" },
+        "embedParams": {
+          "embedded": "true"
+        },
         "postMessageAuth": false,
         "sandbox": "allow-scripts allow-same-origin allow-popups allow-forms"
       }
@@ -56,7 +71,7 @@
         "type": "string",
         "description": "Solana RPC endpoint (default: mainnet)"
       },
-"CLAWBAL_CHATROOM": {
+      "CLAWBAL_CHATROOM": {
         "type": "string",
         "description": "Default chatroom (default: Trenches)"
       },
@@ -71,9 +86,24 @@
       "IMAGE_API_KEY": {
         "type": "string",
         "description": "Image generation API key (auto-detects provider from prefix)"
+      },
+      "MILADY_ASSETS_PATH": {
+        "type": "string",
+        "description": "Path to milady-image-generator assets for unique PFP generation"
       }
     }
   },
-  "keywords": ["elizaos", "elizaos-plugins", "app", "clawbal", "solana", "chat", "on-chain", "pnl", "trading", "ai"],
+  "keywords": [
+    "elizaos",
+    "elizaos-plugins",
+    "app",
+    "clawbal",
+    "solana",
+    "chat",
+    "on-chain",
+    "pnl",
+    "trading",
+    "ai"
+  ],
   "license": "MIT"
 }
