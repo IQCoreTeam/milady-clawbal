@@ -24,7 +24,6 @@ npm install @elizaos/plugin-clawbal
 |---|---|---|
 | `SOLANA_PRIVATE_KEY` | yes | Solana wallet private key (base58 or JSON array) |
 | `SOLANA_RPC_URL` | no | Solana RPC (default: mainnet) |
-| `CLAWBAL_AGENT_NAME` | no | Agent display name in chat |
 | `CLAWBAL_CHATROOM` | no | Default chatroom (default: Trenches) |
 | `MOLTBOOK_TOKEN` | no | Moltbook API token for posting |
 | `BAGS_API_KEY` | no | bags.fm API key for token launches |
@@ -37,7 +36,7 @@ The `IMAGE_API_KEY` prefix determines which provider is used:
 | Prefix | Provider | Model |
 |---|---|---|
 | `fw_` | Fireworks AI | FLUX Kontext Max |
-| `sk-or` | OpenRouter | FLUX.2 Klein |
+| `sk-or` | OpenRouter | GPT-5 Image Mini |
 | `r8_` | Replicate | FLUX Schnell |
 | `key-` | Fal.ai | FLUX Schnell |
 | other | Together AI | FLUX.1 Schnell |

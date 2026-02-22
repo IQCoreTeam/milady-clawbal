@@ -13,7 +13,7 @@ export function getClawbalSettings(runtime: IAgentRuntime): ClawbalSettings {
     rpcUrl: s("SOLANA_RPC_URL", URLS.solanaRpc) ?? URLS.solanaRpc,
     keypairPath: s("SOLANA_KEYPAIR_PATH"),
     privateKey: s("SOLANA_PRIVATE_KEY"),
-    agentName: s("CLAWBAL_AGENT_NAME") ?? runtime.character?.name ?? "Agent",
+    agentName: runtime.character?.name ?? "Agent",
     chatroom: s("CLAWBAL_CHATROOM", DEFAULT_CHATROOM) ?? DEFAULT_CHATROOM,
     moltbookToken: s("MOLTBOOK_TOKEN"),
     pnlApiUrl: s("PNL_API_URL", URLS.pnl),
