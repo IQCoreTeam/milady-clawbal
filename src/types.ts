@@ -1,12 +1,19 @@
-import type { Connection, Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import type { Connection, Keypair, PublicKey } from "@solana/web3.js";
 
-export interface ClawbalConfig {
-  solanaPrivateKey: string;
-  solanaRpcUrl: string;
+export interface ClawbalSettings {
+  rpcUrl: string;
+  keypairPath?: string;
+  privateKey?: string;
   agentName: string;
   chatroom: string;
   moltbookToken?: string;
+  pnlApiUrl?: string;
+  gatewayUrl?: string;
   bagsApiKey?: string;
+  imageApiKey?: string;
+  autonomyIntervalMs?: number;
+  autonomyMaxSteps?: number;
+  autonomousMode?: boolean;
 }
 
 export interface ClawbalMessage {
@@ -14,9 +21,9 @@ export interface ClawbalMessage {
   agent: string;
   wallet: string;
   content: string;
-  bot_message?: string;
-  reply_to?: string;
   timestamp: string;
+  bot_message?: boolean;
+  reply_to?: string;
   tx_sig?: string;
 }
 
@@ -29,59 +36,18 @@ export interface ClawbalChatroom {
 
 export interface IQLabsSDK {
   contract: {
-    PROGRAM_ID: PublicKey;
     getProgramId?(): PublicKey;
+    PROGRAM_ID?: PublicKey;
     getDbRootPda(dbRootId: Buffer, programId: PublicKey): PublicKey;
     getTablePda(dbRootPda: PublicKey, tableSeed: Buffer, programId: PublicKey): PublicKey;
-    getInstructionTablePda(dbRootPda: PublicKey, tableSeed: Buffer, programId: PublicKey): PublicKey;
-    createInstructionBuilder(idl: unknown, programId: PublicKey): unknown;
-    createTableInstruction(
-      builder: unknown,
-      accounts: Record<string, PublicKey>,
-      args: Record<string, unknown>,
-    ): TransactionInstruction;
-    getUserPda(user: PublicKey, programId: PublicKey): PublicKey;
-    updateUserMetadataInstruction(
-      builder: unknown,
-      accounts: Record<string, PublicKey>,
-      args: { db_root_id: Buffer; meta: Buffer },
-    ): TransactionInstruction;
-    initializeDbRootInstruction(
-      builder: unknown,
-      accounts: Record<string, PublicKey>,
-      args: { db_root_id: Buffer },
-    ): TransactionInstruction;
   };
   writer: {
-    writeRow(
-      connection: Connection,
-      keypair: Keypair,
-      dbRootId: Buffer,
-      tableSeed: Buffer,
-      data: string,
-    ): Promise<string>;
-    codeIn(
-      input: { connection: Connection; signer: Keypair },
-      data: string | string[],
-      filename?: string,
-      method?: number,
-      filetype?: string,
-    ): Promise<string>;
+    writeRow(connection: Connection, keypair: Keypair, dbRootId: Buffer, tableSeed: Buffer, data: string): Promise<string>;
+    codeIn(ctx: { connection: Connection; signer: Keypair }, data: string, filename: string, method: number, filetype: string): Promise<string>;
   };
   reader: {
-    readTableRows(
-      tablePda: PublicKey,
-      options: { limit: number },
-    ): Promise<Record<string, unknown>[]>;
+    readTableRows(tablePda: PublicKey, options: { limit: number }): Promise<ClawbalMessage[]>;
   };
-}
-
-export interface SolanaContext {
-  connection: Connection;
-  keypair: Keypair;
-  iqlabs: IQLabsSDK | null;
-  currentChatroom: ClawbalChatroom;
-  allChatrooms: Map<string, ClawbalChatroom>;
 }
 
 export interface PnlTokenInfo {
@@ -125,3 +91,31 @@ export interface PnlLeaderboardEntry {
   currentMcap: number | null;
   pnlPercent: number;
 }
+
+export interface MoltbookPost {
+  id: string;
+  title: string;
+  content?: string;
+  body?: string;
+  submolt?: { name: string };
+  author?: { name: string };
+  upvotes?: number;
+  comment_count?: number;
+  created_at?: string;
+}
+
+export interface MoltbookComment {
+  id: string;
+  content: string;
+  author?: { name: string };
+  created_at?: string;
+  parent_id?: string;
+}
+
+export const ClawbalEventTypes = {
+  MESSAGE_RECEIVED: "clawbal.message.received",
+  MESSAGE_SENT: "clawbal.message.sent",
+  DATA_INSCRIBED: "clawbal.data.inscribed",
+  MOLTBOOK_POST_CREATED: "clawbal.moltbook.post.created",
+  MOLTBOOK_COMMENT_CREATED: "clawbal.moltbook.comment.created",
+} as const;
