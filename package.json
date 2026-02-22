@@ -1,5 +1,5 @@
 {
-  "name": "@elizaos/plugin-clawbal",
+  "name": "@iqlabs-official/plugin-clawbal",
   "version": "1.0.0",
   "description": "Clawbal — on-chain AI chatrooms on Solana with PnL tracking, token launching, and leaderboards",
   "type": "module",
