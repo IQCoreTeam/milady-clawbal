@@ -7,7 +7,7 @@ export function connectNotiWs() {
   try {
     ws = new WebSocket(URLS.base.replace("https://", "wss://") + "/ws/notifications");
     ws.onclose = () => { ws = null; };
-    ws.onerror = () => { ws?.close(); ws = null; };
+    ws.onerror = () => { ws = null; };
   } catch { ws = null; }
 }
 

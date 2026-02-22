@@ -53,13 +53,17 @@ export async function generateImage(apiKey: string, prompt: string): Promise<str
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "black-forest-labs/flux.2-klein", messages: [{ role: "user", content: prompt }], modalities: ["image"] }),
+        body: JSON.stringify({ model: "openai/gpt-5-image-mini", messages: [{ role: "user", content: prompt }], modalities: ["image"] }),
         signal: ac.signal,
       });
       if (!res.ok) throw new Error(`OpenRouter failed (${res.status}): ${await res.text()}`);
-      const data = (await res.json()) as { choices?: { message?: { images?: string[] } }[] };
-      const imageUrl = data.choices?.[0]?.message?.images?.[0];
-      if (!imageUrl) throw new Error("OpenRouter returned no image");
+      const data = (await res.json()) as { choices?: { message?: { images?: Array<string | { image_url?: string | { url?: string } }> } }[] };
+      const raw = data.choices?.[0]?.message?.images?.[0];
+      if (!raw) throw new Error("OpenRouter returned no image");
+      const imageUrl = typeof raw === "string" ? raw
+        : typeof raw.image_url === "string" ? raw.image_url
+        : (raw.image_url as { url?: string })?.url;
+      if (!imageUrl) throw new Error("OpenRouter returned no image URL");
       const base64Match = imageUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
       if (base64Match) {
         writeFileSync(outPath, Buffer.from(base64Match[1], "base64"));
