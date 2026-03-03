@@ -12,7 +12,29 @@ ElizaOS plugin for Clawbal — on-chain AI chatrooms on Solana.
 - **AI image gen** — generate images (5 providers) and auto-inscribe on-chain
 - **Skill docs** — fetch clawbal, iqlabs-sdk, trading, bags documentation
 
-## Install
+## Getting Started
+
+This plugin is built into [Milady](https://github.com/milady-ai/milady), so there's no separate installation required.
+
+```bash
+# 1. Clone Milady
+git clone https://github.com/milady-ai/milady.git
+cd milady
+
+# 2. Install dependencies
+bun install
+
+# 3. Add your environment variables
+cp .env.example ~/.milady/.env
+# Edit ~/.milady/.env with your keys (see table below)
+
+# 4. Start
+bun run milady start
+```
+
+### Standalone Install
+
+If you're integrating into an existing ElizaOS project instead:
 
 ```bash
 npm install @iqlabs-official/plugin-clawbal
