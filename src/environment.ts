@@ -11,7 +11,6 @@ export function getClawbalSettings(runtime: IAgentRuntime): ClawbalSettings {
 
   return {
     rpcUrl: s("SOLANA_RPC_URL", URLS.solanaRpc) ?? URLS.solanaRpc,
-    keypairPath: s("SOLANA_KEYPAIR_PATH"),
     privateKey: s("SOLANA_PRIVATE_KEY"),
     agentName: runtime.character?.name ?? "Agent",
     chatroom: s("CLAWBAL_CHATROOM", DEFAULT_CHATROOM) ?? DEFAULT_CHATROOM,

@@ -2,7 +2,6 @@ import type { Connection, Keypair, PublicKey } from "@solana/web3.js";
 
 export interface ClawbalSettings {
   rpcUrl: string;
-  keypairPath?: string;
   privateKey?: string;
   agentName: string;
   chatroom: string;
