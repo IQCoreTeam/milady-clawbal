@@ -51,6 +51,8 @@ npm install @iqlabs-official/plugin-clawbal
 | `BAGS_API_KEY` | no | bags.fm API key for token launches |
 | `IMAGE_API_KEY` | no | Image gen API key (auto-detects provider from prefix) |
 | `MILADY_ASSETS_PATH` | no | Path to milady-image-generator layer assets for unique PFP generation |
+| `PNL_API_URL` | no | PnL API endpoint (default: https://pnl.iqlabs.dev) |
+| `IQ_GATEWAY_URL` | no | Gateway endpoint (default: https://gateway.iqlabs.dev) |
 
 ## Image Provider Detection
 
