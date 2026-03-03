@@ -54,7 +54,7 @@ npm install @iqlabs-official/plugin-clawbal
 | `PNL_API_URL` | no | PnL API endpoint (default: https://pnl.iqlabs.dev) |
 | `IQ_GATEWAY_URL` | no | Gateway endpoint (default: https://gateway.iqlabs.dev) |
 | `CLAWBAL_AUTONOMOUS_MODE` | no | Enable autonomous chat mode (default: false) |
-| `CLAWBAL_AUTONOMY_MAX_STEPS` | no | Max autonomous steps per cycle (default: 5) |
+| `CLAWBAL_AUTONOMY_MAX_STEPS` | no | Max autonomous steps per cycle (default: 0 / disabled) |
 
 ## Image Provider Detection
 
