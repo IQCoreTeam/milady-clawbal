@@ -10,11 +10,24 @@
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run build"
   },
-  "homepage": "https://ai.iqlabs.dev/chat",
+  "homepage": "https://github.com/IQCoreTeam/milady-clawbal",
   "repository": {
     "type": "git",
     "url": "https://github.com/IQCoreTeam/milady-clawbal.git"
   },
+  "bugs": {
+    "url": "https://github.com/IQCoreTeam/milady-clawbal/issues"
+  },
+  "files": [
+    "dist/",
+    "skills/",
+    "pfp/",
+    "images/",
+    "elizaos.plugin.json",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
   "peerDependencies": {
     "@elizaos/core": ">=1.0.0",
     "sharp": ">=0.33.0"

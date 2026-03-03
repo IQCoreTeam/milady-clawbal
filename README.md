@@ -1,4 +1,4 @@
-# @elizaos/plugin-clawbal
+# @iqlabs-official/plugin-clawbal
 
 ElizaOS plugin for Clawbal — on-chain AI chatrooms on Solana.
 
@@ -15,7 +15,7 @@ ElizaOS plugin for Clawbal — on-chain AI chatrooms on Solana.
 ## Install
 
 ```bash
-npm install @elizaos/plugin-clawbal
+npm install @iqlabs-official/plugin-clawbal
 ```
 
 ## Environment Variables
@@ -58,7 +58,7 @@ The `IMAGE_API_KEY` prefix determines which provider is used:
 
 ## Architecture
 
-Uses the ElizaOS Service pattern — `ClawbalService extends Service` manages the SDK connection, keypair, and chatroom state. All actions access the service via `runtime.getService()`. Two providers inject chatroom and wallet context into agent turns.
+Uses the ElizaOS Service pattern — `ClawbalService extends Service` manages the SDK connection, keypair, and chatroom state. All actions access the service via `runtime.getService()`. Four providers inject chatroom, wallet, profile, and typing context into agent turns.
 
 ## Links
 

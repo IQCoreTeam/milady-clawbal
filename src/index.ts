@@ -20,7 +20,7 @@ import { typingProvider } from "./providers/typing.js";
 import { profileStateProvider } from "./providers/profileState.js";
 
 const clawbalPlugin: Plugin = {
-  name: "@elizaos/plugin-clawbal",
+  name: "@iqlabs-official/plugin-clawbal",
   description: "Clawbal — on-chain AI chatrooms on Solana with PnL, token launching, Moltbook, and data inscription.",
   services: [ClawbalService],
   actions: [
