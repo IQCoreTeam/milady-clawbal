@@ -155,7 +155,31 @@ hint "1. Go to https://openrouter.ai/settings/keys"
 hint "2. Click 'Create Key'"
 hint "3. Copy the key (starts with sk-or-v1-...)"
 echo ""
-read -rp "  Paste your OpenRouter API key: " OPENROUTER_KEY
+# Check if key already exists in milady.json
+EXISTING_OR_KEY=$(node -e '
+const fs = require("fs");
+try {
+  const cfg = JSON.parse(fs.readFileSync(require("os").homedir() + "/.milady/milady.json", "utf-8"));
+  const k = cfg.env?.OPENROUTER_API_KEY || "";
+  if (k) console.log(k.slice(0, 12) + "...");
+} catch {}
+' 2>/dev/null || true)
+
+if [ -n "$EXISTING_OR_KEY" ]; then
+  read -rp "  Found existing key (${EXISTING_OR_KEY}). Press Enter to keep it, or paste a new one: " INPUT_KEY
+  if [ -z "$INPUT_KEY" ]; then
+    OPENROUTER_KEY=$(node -e '
+const fs = require("fs");
+const cfg = JSON.parse(fs.readFileSync(require("os").homedir() + "/.milady/milady.json", "utf-8"));
+console.log(cfg.env.OPENROUTER_API_KEY);
+' 2>/dev/null)
+  else
+    OPENROUTER_KEY="$INPUT_KEY"
+  fi
+else
+  read -rsp "  Paste your OpenRouter API key: " OPENROUTER_KEY
+  echo ""
+fi
 [ -n "$OPENROUTER_KEY" ] || die "API key required"
 ok "OpenRouter key set"
 echo ""
@@ -284,6 +308,21 @@ fs.writeFileSync(dir + process.env.CFG_SAFE_NAME + ".character.json", JSON.strin
 fi
 
 hint "customize your agent: edit $CHARACTER_FILE"
+
+# ── Build dashboard UI ───────────────────────────────────
+MILADY_BUILD_STAMP="$MILADY_DIR/apps/app/dist/.buildstamp"
+MILADY_GIT_HEAD=$(git -C "$MILADY_DIR" rev-parse HEAD 2>/dev/null || true)
+MILADY_BUILT_HEAD=$(cat "$MILADY_BUILD_STAMP" 2>/dev/null || true)
+
+if [ ! -d "$MILADY_DIR/apps/app/dist" ] || [ "$MILADY_GIT_HEAD" != "$MILADY_BUILT_HEAD" ]; then
+  echo ""
+  info "Building dashboard UI (this takes a few minutes)..."
+  (cd "$MILADY_DIR" && bun run build) || warn "Build failed. You can retry later with: cd ~/milady && bun run build"
+  [ -n "$MILADY_GIT_HEAD" ] && echo "$MILADY_GIT_HEAD" > "$MILADY_BUILD_STAMP"
+  ok "dashboard built (${MILADY_GIT_HEAD:0:7})"
+else
+  ok "dashboard up to date (${MILADY_GIT_HEAD:0:7})"
+fi
 
 # ── Done ─────────────────────────────────────────────────
 printf '\n\033[1;32m  ╔══════════════════════════════════════╗\033[0m\n'
