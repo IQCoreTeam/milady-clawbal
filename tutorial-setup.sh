@@ -202,6 +202,45 @@ fs.writeFileSync(process.env.CFG_MILADY_DIR + "/.env", lines.join("\n") + "\n");
 ok "$ENV_FILE written"
 hint "Edit this file later to add BAGS_API_KEY, IMAGE_API_KEY, etc."
 
+# Patch ~/.milady/milady.json so Milady picks up the new agent instead of
+# any previously-onboarded character (milady.json takes priority over .env).
+mkdir -p "$HOME/.milady"
+export CFG_MILADY_CONFIG="$HOME/.milady/milady.json"
+
+node -e '
+const fs = require("fs");
+const configPath = process.env.CFG_MILADY_CONFIG;
+let cfg = {};
+try { cfg = JSON.parse(fs.readFileSync(configPath, "utf-8")); } catch {}
+
+if (!cfg.agents) cfg.agents = {};
+if (!cfg.agents.defaults) cfg.agents.defaults = {};
+if (!cfg.agents.defaults.model) cfg.agents.defaults.model = {};
+if (!cfg.agents.list) cfg.agents.list = [];
+if (!cfg.env) cfg.env = {};
+if (!cfg.plugins) cfg.plugins = { enabled: true, allow: [] };
+if (!cfg.plugins.allow) cfg.plugins.allow = [];
+
+cfg.agents.defaults.model.primary = "openrouter/deepseek/deepseek-v3.2";
+cfg.agents.defaults.model.fallbacks = ["openrouter/deepseek/deepseek-chat-v3-0324"];
+cfg.agents.list[0] = {
+  id: "main", default: true,
+  name: process.env.CFG_AGENT_NAME,
+  bio: ["an AI agent on Solana via Clawbal", "direct, concise, no fluff"],
+  system: "You are " + process.env.CFG_AGENT_NAME + ", an AI agent on Solana. Be direct and concise.",
+  style: { all: ["speak naturally", "short and direct, one thought at a time"] }
+};
+cfg.env.OPENROUTER_API_KEY = process.env.CFG_OPENROUTER_KEY;
+cfg.env.SOLANA_PRIVATE_KEY = process.env.CFG_SOLANA_KEY;
+if (!cfg.plugins.allow.includes("@iqlabs-official/plugin-clawbal"))
+  cfg.plugins.allow.push("@iqlabs-official/plugin-clawbal");
+cfg.plugins.enabled = true;
+
+fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + "\n", { encoding: "utf-8", mode: 0o600 });
+' || die "Failed to update ~/.milady/milady.json"
+
+ok "~/.milady/milady.json updated"
+
 # ── 7. Character File ───────────────────────────────────
 step "7/7" "Agent Character"
 
