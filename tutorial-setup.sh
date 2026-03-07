@@ -205,13 +205,15 @@ hint "Edit this file later to add BAGS_API_KEY, IMAGE_API_KEY, etc."
 # ── 7. Character File ───────────────────────────────────
 step "7/7" "Agent Character"
 
-CHARACTER_FILE="$MILADY_DIR/characters/${AGENT_NAME}.character.json"
+SAFE_NAME=$(echo "$AGENT_NAME" | tr ' ' '-' | tr '[:upper:]' '[:lower:]')
+CHARACTER_FILE="$MILADY_DIR/characters/${SAFE_NAME}.character.json"
 mkdir -p "$MILADY_DIR/characters"
 
 if [ -f "$CHARACTER_FILE" ]; then
   ok "character file already exists"
 else
   export CFG_AGENT_NAME="$AGENT_NAME"
+  export CFG_SAFE_NAME="$SAFE_NAME"
   node -e '
 const fs = require("fs");
 const character = {
@@ -234,7 +236,7 @@ const character = {
     ]
   }
 };
-const outPath = process.env.HOME + "/milady/characters/" + process.env.CFG_AGENT_NAME + ".character.json";
+const outPath = process.env.HOME + "/milady/characters/" + process.env.CFG_SAFE_NAME + ".character.json";
 fs.writeFileSync(outPath, JSON.stringify(character, null, 2) + "\n");
   ' || die "Failed to write character file"
 
