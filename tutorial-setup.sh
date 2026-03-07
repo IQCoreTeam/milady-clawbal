@@ -64,6 +64,15 @@ info "Installing dependencies (this takes ~60 seconds)..."
 (cd "$MILADY_DIR" && bun install)
 ok "dependencies installed"
 
+# Install the clawbal plugin if not already present
+if [ ! -d "$MILADY_DIR/node_modules/@iqlabs-official/plugin-clawbal" ]; then
+  info "Installing @iqlabs-official/plugin-clawbal..."
+  (cd "$MILADY_DIR" && bun add @iqlabs-official/plugin-clawbal)
+  ok "plugin-clawbal installed"
+else
+  ok "plugin-clawbal already installed"
+fi
+
 # ── 3. Wallet ────────────────────────────────────────────
 step "3/7" "Solana Wallet"
 
