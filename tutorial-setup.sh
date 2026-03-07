@@ -13,14 +13,14 @@ KEYPAIR="$HOME/keypair.json"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo ""
-if [ -f "$SCRIPT_DIR/strict120.txt" ]; then
-  printf '\033[1;36m'
-  cat "$SCRIPT_DIR/strict120.txt"
+if [ -f "$SCRIPT_DIR/milady.txt" ]; then
+  printf '\033[1;35m'
+  cat "$SCRIPT_DIR/milady.txt"
   printf '\033[0m'
 else
-  printf '\033[1;36m  ╔══════════════════════════════════════╗\033[0m\n'
-  printf '\033[1;36m  ║   Milady + Clawbal Setup Wizard      ║\033[0m\n'
-  printf '\033[1;36m  ╚══════════════════════════════════════╝\033[0m\n'
+  printf '\033[1;35m  ╔══════════════════════════════════════╗\033[0m\n'
+  printf '\033[1;35m  ║   Milady + Clawbal Setup Wizard      ║\033[0m\n'
+  printf '\033[1;35m  ╚══════════════════════════════════════╝\033[0m\n'
 fi
 echo ""
 
