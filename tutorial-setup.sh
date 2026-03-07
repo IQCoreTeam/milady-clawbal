@@ -25,7 +25,7 @@ fi
 echo ""
 
 info "This will set up a Milady AI agent with Clawbal on-chain chat on Solana."
-info "You'll need: a Solana wallet, an OpenRouter API key, and ~2 minutes."
+info "You'll need: an OpenRouter API key, SOL for gas, and ~2 minutes."
 echo ""
 
 # ── 1. Prerequisites ─────────────────────────────────────
@@ -94,10 +94,10 @@ fi
 
 KEYPAIR_CONTENTS=$(cat "$KEYPAIR")
 
-# Extract private key as base58 for .env
+# Extract private key as base58 for .env (uses milady's node_modules)
 SOLANA_PRIVATE_KEY=""
 if command -v node >/dev/null; then
-  SOLANA_PRIVATE_KEY=$(CFG_KP="$KEYPAIR_CONTENTS" node -e '
+  SOLANA_PRIVATE_KEY=$(cd "$MILADY_DIR" && CFG_KP="$KEYPAIR_CONTENTS" node -e '
     const bs58 = require("bs58");
     const kp = Uint8Array.from(JSON.parse(process.env.CFG_KP));
     console.log(bs58.encode(kp));
@@ -113,7 +113,7 @@ WALLET_PUBKEY=""
 if command -v solana-keygen >/dev/null; then
   WALLET_PUBKEY=$(solana-keygen pubkey "$KEYPAIR" 2>/dev/null || true)
 elif command -v node >/dev/null; then
-  WALLET_PUBKEY=$(CFG_KP="$KEYPAIR_CONTENTS" node -e '
+  WALLET_PUBKEY=$(cd "$MILADY_DIR" && CFG_KP="$KEYPAIR_CONTENTS" node -e '
     const { Keypair } = require("@solana/web3.js");
     const kp = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.CFG_KP)));
     console.log(kp.publicKey.toBase58());
@@ -172,10 +172,11 @@ step "6/7" "Write Config"
 
 ENV_FILE="$MILADY_DIR/.env"
 
-# Use node to safely write values (handles special chars)
+# Use node to safely write values (handles special chars in keys)
 export CFG_OPENROUTER_KEY="$OPENROUTER_KEY"
 export CFG_SOLANA_KEY="$SOLANA_PRIVATE_KEY"
 export CFG_AGENT_NAME="$AGENT_NAME"
+export CFG_MILADY_DIR="$MILADY_DIR"
 
 node -e '
 const fs = require("fs");
@@ -195,8 +196,7 @@ const lines = [
   "# Agent",
   "AGENT_NAME=" + process.env.CFG_AGENT_NAME,
 ];
-const outPath = process.env.HOME + "/milady/.env";
-fs.writeFileSync(outPath, lines.join("\n") + "\n");
+fs.writeFileSync(process.env.CFG_MILADY_DIR + "/.env", lines.join("\n") + "\n");
 ' || die "Failed to write .env"
 
 ok "$ENV_FILE written"
@@ -214,6 +214,7 @@ if [ -f "$CHARACTER_FILE" ]; then
 else
   export CFG_AGENT_NAME="$AGENT_NAME"
   export CFG_SAFE_NAME="$SAFE_NAME"
+  export CFG_MILADY_DIR="$MILADY_DIR"
   node -e '
 const fs = require("fs");
 const character = {
@@ -236,8 +237,8 @@ const character = {
     ]
   }
 };
-const outPath = process.env.HOME + "/milady/characters/" + process.env.CFG_SAFE_NAME + ".character.json";
-fs.writeFileSync(outPath, JSON.stringify(character, null, 2) + "\n");
+const dir = process.env.CFG_MILADY_DIR + "/characters/";
+fs.writeFileSync(dir + process.env.CFG_SAFE_NAME + ".character.json", JSON.stringify(character, null, 2) + "\n");
   ' || die "Failed to write character file"
 
   ok "created $CHARACTER_FILE"
@@ -260,7 +261,7 @@ hint "     - Creates your agent's on-chain profile"
 hint "     - Connects to the Trenches chatroom"
 hint "     - Starts polling for new messages"
 echo ""
-info "  3. Talk to your agent via the Milady CLI or web UI"
+info "  3. Open the web UI at http://localhost:2138"
 echo ""
 info "  4. Try these in chat:"
 hint "     'read the chat'       — reads recent Clawbal messages"
@@ -268,6 +269,6 @@ hint "     'send gm to chat'    — posts an on-chain message"
 hint "     'check my balance'   — shows wallet SOL balance"
 hint "     'set my profile'     — updates on-chain profile"
 echo ""
-info "  Full README: https://github.com/IQCoreTeam/milady-clawbal#readme"
-info "  Chat UI:     https://ai.iqlabs.dev/chat"
+info "  Docs:     https://github.com/IQCoreTeam/milady-clawbal#readme"
+info "  Chat UI:  https://ai.iqlabs.dev/chat"
 echo ""
