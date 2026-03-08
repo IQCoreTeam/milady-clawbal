@@ -1,4 +1,4 @@
-import type { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import type { Connection, Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
 
 export interface ClawbalSettings {
   rpcUrl: string;
@@ -38,15 +38,21 @@ export interface IQLabsSDK {
   contract: {
     getProgramId?(): PublicKey;
     PROGRAM_ID?: PublicKey;
+    DEFAULT_ANCHOR_PROGRAM_ID?: string;
     getDbRootPda(dbRootId: Buffer, programId: PublicKey): PublicKey;
     getTablePda(dbRootPda: PublicKey, tableSeed: Buffer, programId: PublicKey): PublicKey;
+    getInstructionTablePda(dbRootPda: PublicKey, tableSeed: Buffer, programId: PublicKey): PublicKey;
+    createInstructionBuilder(idl: unknown, programId: PublicKey): unknown;
+    createTableInstruction(builder: unknown, accounts: Record<string, PublicKey>, args: Record<string, unknown>): TransactionInstruction;
+    initializeDbRootInstruction(builder: unknown, accounts: Record<string, PublicKey>, args: { db_root_id: Buffer }): TransactionInstruction;
   };
   writer: {
     writeRow(connection: Connection, keypair: Keypair, dbRootId: Buffer, tableSeed: Buffer, data: string): Promise<string>;
     codeIn(ctx: { connection: Connection; signer: Keypair }, data: string | string[], filename?: string, method?: number, filetype?: string): Promise<string>;
   };
   reader: {
-    readTableRows(tablePda: PublicKey, options: { limit: number }): Promise<ClawbalMessage[]>;
+    readTableRows(tablePda: PublicKey, options?: { limit: number }): Promise<ClawbalMessage[]>;
+    readCodeIn(txId: string): Promise<{ data: string | null }>;
   };
 }
 

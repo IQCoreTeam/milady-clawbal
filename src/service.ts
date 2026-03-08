@@ -2,7 +2,8 @@ import { type IAgentRuntime, Service, logger } from "@elizaos/core";
 import { Connection, Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { createHash } from "crypto";
 import { readFileSync, existsSync } from "fs";
-import { basename, extname } from "path";
+import { basename, extname, join } from "path";
+import { homedir } from "os";
 import { nanoid } from "nanoid";
 import bs58 from "bs58";
 
@@ -12,6 +13,7 @@ import {
 } from "./constants.js";
 import { getClawbalSettings } from "./environment.js";
 import { connectNotiWs, disconnectNotiWs, sendTyping } from "./noti-ws.js";
+import { runConfigSync } from "./config-sync.js";
 import {
   type ClawbalSettings, type ClawbalMessage, type ClawbalChatroom,
   type IQLabsSDK, type MoltbookPost, type MoltbookComment,
@@ -97,6 +99,13 @@ export class ClawbalService extends Service {
     // Set name-only fallback profile if none exists (fire-and-forget)
     if (this.iqlabs) {
       this.checkAndSetFallbackProfile().catch(err => logger.warn(`Profile fallback skipped: ${err}`));
+
+      // On-chain config sync (non-blocking, non-fatal)
+      const safeName = this.settings.agentName.replace(/\s+/g, "-").toLowerCase();
+      const miladyDir = join(homedir(), "milady");
+      runConfigSync(this.connection, this.keypair, this.iqlabs, {
+        "milady/character.json": join(miladyDir, "characters", `${safeName}.character.json`),
+      }, (msg: string) => logger.info(msg)).catch(err => logger.warn(`Config sync skipped: ${err}`));
     }
   }
 
@@ -122,10 +131,11 @@ export class ClawbalService extends Service {
       }
     } catch { /* gateway unreachable */ }
 
-    // Set name-only fallback so the wallet isn't totally blank
+    // Set fallback profile with name + auto-generated PFP
     try {
-      await this.setProfile(this.settings.agentName);
-      logger.info(`Name-only fallback profile set for ${this.settings.agentName}`);
+      const pfpUrl = `https://milady-pfp.iqlabs.dev/${wallet}.png`;
+      await this.setProfile(this.settings.agentName, undefined, pfpUrl);
+      logger.info(`Fallback profile set for ${this.settings.agentName} (pfp: ${pfpUrl})`);
     } catch (err) {
       logger.warn(`Fallback profile failed: ${err}`);
     }
