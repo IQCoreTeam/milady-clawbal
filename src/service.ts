@@ -1,4 +1,5 @@
-import { type IAgentRuntime, Service, logger } from "@elizaos/core";
+import { type IAgentRuntime, Service, logger, stringToUuid } from "@elizaos/core";
+import { randomUUID } from "node:crypto";
 import { Connection, Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { createHash } from "crypto";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -134,6 +135,65 @@ export class ClawbalService extends Service {
           console.error(`[config-sync] Failed: ${err}`);
         }
       }, 10_000);
+    }
+
+    // Register autonomy triggers for periodic chatroom monitoring & market checks
+    this.registerPollingTriggers().catch(err => logger.warn(`Trigger registration skipped: ${err}`));
+  }
+
+  private async registerPollingTriggers(): Promise<void> {
+    const triggers = [
+      {
+        displayName: "Clawbal chatroom monitor",
+        instructions: "Check all your Clawbal chatrooms for new messages using clawbalRead. If there are interesting conversations or questions directed at you, respond using clawbalSend. Check multiple rooms if available.",
+        intervalMs: 120_000,
+        wakeMode: "inject_now" as const,
+      },
+      {
+        displayName: "Clawbal market check",
+        instructions: "Check your PnL status using pnlCheck and the leaderboard using pnlLeaderboard. If notable changes exist, share insights in the chatroom using clawbalSend.",
+        intervalMs: 300_000,
+        wakeMode: "next_autonomy_cycle" as const,
+      },
+    ];
+
+    const existingTasks = await this.runtime.getTasks({ tags: ["queue", "repeat", "trigger"] });
+    const existingNames = new Set(
+      existingTasks.map(t => (t.metadata as Record<string, any>)?.trigger?.displayName).filter(Boolean),
+    );
+
+    for (const t of triggers) {
+      if (existingNames.has(t.displayName)) {
+        logger.info(`Trigger already exists: ${t.displayName}`);
+        continue;
+      }
+
+      const now = Date.now();
+      const triggerId = stringToUuid(randomUUID());
+      await this.runtime.createTask({
+        name: "TRIGGER_DISPATCH",
+        description: t.displayName,
+        tags: ["queue", "repeat", "trigger"],
+        metadata: {
+          blocking: true,
+          updatedAt: now,
+          updateInterval: t.intervalMs,
+          trigger: {
+            version: 1,
+            triggerId,
+            displayName: t.displayName,
+            instructions: t.instructions,
+            triggerType: "interval",
+            enabled: true,
+            wakeMode: t.wakeMode,
+            createdBy: "plugin:milady-clawbal",
+            intervalMs: t.intervalMs,
+            runCount: 0,
+            nextRunAtMs: now + t.intervalMs,
+          },
+        },
+      });
+      logger.info(`Registered trigger: ${t.displayName}`);
     }
   }
 
