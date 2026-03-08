@@ -157,6 +157,33 @@ read -rp "  Press Enter once you've funded the wallet (or skip for now)..."
 # ── 5. Credentials ───────────────────────────────────────
 step "5/7" "API Keys"
 
+# -- Solana RPC --
+info "Your agent needs a Solana RPC endpoint. The free public endpoint is rate-limited."
+info "For reliable on-chain sync, we recommend Helius (free tier: 100k requests/day)."
+echo ""
+hint "1. Go to https://www.helius.dev"
+hint "2. Sign up and create a project"
+hint "3. Copy your mainnet RPC URL (looks like https://mainnet.helius-rpc.com/?api-key=...)"
+echo ""
+
+EXISTING_RPC=""
+if [ -f "$MILADY_DIR/.env" ]; then
+  EXISTING_RPC=$(grep -oP 'SOLANA_RPC_URL=\K.+' "$MILADY_DIR/.env" 2>/dev/null || true)
+fi
+if [ -n "$EXISTING_RPC" ] && [ "$EXISTING_RPC" != "https://api.mainnet-beta.solana.com" ]; then
+  read -rp "  Found existing RPC (${EXISTING_RPC:0:40}...). Press Enter to keep, or paste new: " INPUT_RPC
+  if [ -z "$INPUT_RPC" ]; then
+    SOLANA_RPC="$EXISTING_RPC"
+  else
+    SOLANA_RPC="$INPUT_RPC"
+  fi
+else
+  read -rp "  Paste your RPC URL (Enter = free public endpoint): " SOLANA_RPC
+  SOLANA_RPC="${SOLANA_RPC:-https://api.mainnet-beta.solana.com}"
+fi
+ok "RPC: ${SOLANA_RPC:0:50}..."
+echo ""
+
 # -- OpenRouter --
 info "Your agent needs an LLM. We use OpenRouter (works with 100+ models)."
 echo ""
@@ -196,8 +223,28 @@ echo ""
 # -- Agent Name --
 info "Pick a name for your agent. This is how it appears in Clawbal chat."
 echo ""
-read -rp "  Agent name [MiladyAgent]: " AGENT_NAME
-AGENT_NAME=${AGENT_NAME:-MiladyAgent}
+
+# Check on-chain profile first
+ONCHAIN_NAME=""
+if [ -n "$WALLET_PUBKEY" ]; then
+  ONCHAIN_NAME=$(curl -sf "https://gateway.iqlabs.dev/user/${WALLET_PUBKEY}/state" 2>/dev/null | node -e "
+    let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+      try {
+        const s=JSON.parse(d);
+        const p=typeof s.profileData==='string'?JSON.parse(s.profileData):s.profileData;
+        if(p?.name) console.log(p.name);
+      } catch{}
+    });
+  " 2>/dev/null || true)
+fi
+
+if [ -n "$ONCHAIN_NAME" ]; then
+  read -rp "  On-chain profile name: ${ONCHAIN_NAME}. Keep it? (Enter = yes, or type new name): " AGENT_NAME
+  AGENT_NAME=${AGENT_NAME:-$ONCHAIN_NAME}
+else
+  read -rp "  Agent name [MiladyAgent]: " AGENT_NAME
+  AGENT_NAME=${AGENT_NAME:-MiladyAgent}
+fi
 ok "agent name: ${AGENT_NAME}"
 
 # ── 6. Write .env ────────────────────────────────────────
@@ -208,6 +255,7 @@ ENV_FILE="$MILADY_DIR/.env"
 # Use node to safely write values (handles special chars in keys)
 export CFG_OPENROUTER_KEY="$OPENROUTER_KEY"
 export CFG_SOLANA_KEY="$SOLANA_PRIVATE_KEY"
+export CFG_SOLANA_RPC="$SOLANA_RPC"
 export CFG_AGENT_NAME="$AGENT_NAME"
 export CFG_MILADY_DIR="$MILADY_DIR"
 
@@ -221,7 +269,7 @@ const lines = [
   "",
   "# Solana",
   "SOLANA_PRIVATE_KEY=" + process.env.CFG_SOLANA_KEY,
-  "SOLANA_RPC_URL=https://api.mainnet-beta.solana.com",
+  "SOLANA_RPC_URL=" + process.env.CFG_SOLANA_RPC,
   "",
   "# Clawbal",
   "CLAWBAL_CHATROOM=Trenches",
@@ -282,12 +330,79 @@ CHARACTER_FILE="$MILADY_DIR/characters/${SAFE_NAME}.character.json"
 mkdir -p "$MILADY_DIR/characters"
 
 if [ -f "$CHARACTER_FILE" ]; then
-  ok "character file already exists"
+  ok "character file already exists (will sync with on-chain config on startup)"
+  hint "customize your agent: edit $CHARACTER_FILE"
 else
+  info "How do you want to set up your agent's character?"
+  echo ""
+  hint "  [1] Use default character (just press Enter)"
+  hint "  [2] Describe your agent — we'll generate character.json for you"
+  hint "  [3] Provide your own character.json (see example: https://git.iqlabs.dev/${WALLET_PUBKEY}/agent-config)"
+  echo ""
+  printf '  Choose [1/2/3]: '
+  read -r CHARACTER_CHOICE
+  CHARACTER_CHOICE="${CHARACTER_CHOICE:-1}"
+
   export CFG_AGENT_NAME="$AGENT_NAME"
   export CFG_SAFE_NAME="$SAFE_NAME"
   export CFG_MILADY_DIR="$MILADY_DIR"
-  node -e '
+
+  case "$CHARACTER_CHOICE" in
+    2)
+      echo ""
+      printf '  Agent name [%s]: ' "$AGENT_NAME"
+      read -r CUSTOM_NAME
+      CUSTOM_NAME="${CUSTOM_NAME:-$AGENT_NAME}"
+      printf '  What is your agent? (e.g. "a memecoin degen", "a wise philosopher"): '
+      read -r CUSTOM_BIO
+      CUSTOM_BIO="${CUSTOM_BIO:-an AI agent that lives on-chain on Solana}"
+      printf '  Style? (e.g. "sarcastic and funny", "formal and precise"): '
+      read -r CUSTOM_STYLE
+      CUSTOM_STYLE="${CUSTOM_STYLE:-speak naturally, like texting a friend}"
+
+      export CFG_CUSTOM_NAME="$CUSTOM_NAME"
+      export CFG_CUSTOM_BIO="$CUSTOM_BIO"
+      export CFG_CUSTOM_STYLE="$CUSTOM_STYLE"
+      node -e '
+const fs = require("fs");
+const character = {
+  name: process.env.CFG_CUSTOM_NAME,
+  plugins: ["@iqlabs-official/plugin-clawbal"],
+  settings: {
+    model: "openrouter/deepseek/deepseek-v3.2",
+    voice: { model: "en_US-male-medium" }
+  },
+  bio: [
+    process.env.CFG_CUSTOM_BIO,
+    "chats in Clawbal chatrooms on Solana"
+  ],
+  style: {
+    all: [
+      process.env.CFG_CUSTOM_STYLE,
+      "no bullet points, no markdown, no lists",
+      "short and direct, one thought at a time"
+    ]
+  }
+};
+const dir = process.env.CFG_MILADY_DIR + "/characters/";
+fs.writeFileSync(dir + process.env.CFG_SAFE_NAME + ".character.json", JSON.stringify(character, null, 2) + "\n");
+      ' || die "Failed to write character file"
+
+      ok "generated character from your description: $CHARACTER_FILE"
+      ;;
+    3)
+      echo ""
+      info "Place your character.json at:"
+      hint "  $CHARACTER_FILE"
+      echo ""
+      info "See an example on-chain:"
+      hint "  https://git.iqlabs.dev/${WALLET_PUBKEY}/agent-config"
+      echo ""
+      printf '  Press Enter when your file is ready...'
+      read -r
+      if [ ! -f "$CHARACTER_FILE" ]; then
+        warn "character file not found — creating default"
+        node -e '
 const fs = require("fs");
 const character = {
   name: process.env.CFG_AGENT_NAME,
@@ -311,12 +426,44 @@ const character = {
 };
 const dir = process.env.CFG_MILADY_DIR + "/characters/";
 fs.writeFileSync(dir + process.env.CFG_SAFE_NAME + ".character.json", JSON.stringify(character, null, 2) + "\n");
-  ' || die "Failed to write character file"
+        ' || die "Failed to write character file"
+      fi
+      ok "character file loaded"
+      ;;
+    *)
+      # Default
+      node -e '
+const fs = require("fs");
+const character = {
+  name: process.env.CFG_AGENT_NAME,
+  plugins: ["@iqlabs-official/plugin-clawbal"],
+  settings: {
+    model: "openrouter/deepseek/deepseek-v3.2",
+    voice: { model: "en_US-male-medium" }
+  },
+  bio: [
+    "an AI agent that lives on-chain on Solana",
+    "chats in Clawbal chatrooms and tracks token calls",
+    "direct, concise, no fluff"
+  ],
+  style: {
+    all: [
+      "speak naturally, like texting a friend",
+      "no bullet points, no markdown, no lists",
+      "short and direct, one thought at a time"
+    ]
+  }
+};
+const dir = process.env.CFG_MILADY_DIR + "/characters/";
+fs.writeFileSync(dir + process.env.CFG_SAFE_NAME + ".character.json", JSON.stringify(character, null, 2) + "\n");
+      ' || die "Failed to write character file"
 
-  ok "created $CHARACTER_FILE"
+      ok "default character created: $CHARACTER_FILE"
+      ;;
+  esac
+
+  hint "customize your agent: edit $CHARACTER_FILE"
 fi
-
-hint "customize your agent: edit $CHARACTER_FILE"
 
 # ── Build dashboard UI ───────────────────────────────────
 MILADY_BUILD_STAMP="$MILADY_DIR/apps/app/dist/.buildstamp"

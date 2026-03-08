@@ -59,6 +59,10 @@ export async function checkOnChain(
   const tablePda = iqlabs.contract.getTablePda(dbRootPda, tableSeed, programId);
 
   try {
+    // Quick existence check — 1 RPC call instead of heavy readTableRows
+    const info = await connection.getAccountInfo(tablePda);
+    if (!info) return null;
+
     const rows = await iqlabs.reader.readTableRows(tablePda);
     const commits = (rows as any[])
       .filter((c: any) => c.repoName === REPO_NAME)
@@ -69,8 +73,9 @@ export async function checkOnChain(
     const treeResult = await iqlabs.reader.readCodeIn(commits[0].treeTxId);
     if (!treeResult.data) return null;
     return JSON.parse(treeResult.data);
-  } catch {
-    return null;
+  } catch (err) {
+    console.error(`[config-sync] checkOnChain error: ${err}`);
+    return { __error: true } as any;
   }
 }
 
@@ -119,9 +124,14 @@ export async function pushToChain(
     await sendAndConfirmTransaction(connection, new Transaction().add(ix), [keypair]);
   }
 
+  // Rate-limit-safe delay for free RPCs
+  const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
   // Ensure repos table exists (owner-scoped)
   await ensureTable(connection, keypair, iqlabs, dbRootId, REPOS_TABLE, ["name", "description", "owner", "timestamp", "isPublic"], wallet);
+  await delay(2000);
   await ensureTable(connection, keypair, iqlabs, dbRootId, COMMITS_TABLE, ["id", "repoName", "message", "author", "timestamp", "treeTxId", "parentCommitId"], wallet);
+  await delay(2000);
 
   // Create repo if it doesn't exist
   const reposSeed = ownerTableSeed(REPOS_TABLE, wallet);
@@ -138,6 +148,7 @@ export async function pushToChain(
         isPublic: true,
       }));
       console.log(`Created on-chain repo: ${REPO_NAME}`);
+      await delay(2000);
     }
   } catch {
     // Table might be empty, create repo
@@ -148,11 +159,14 @@ export async function pushToChain(
       timestamp: Date.now(),
       isPublic: true,
     }));
+    await delay(2000);
   }
-
-  // Upload each file
   const fileTree: Record<string, { txId: string; hash: string }> = {};
+  let first = true;
   for (const [path, content] of Object.entries(files)) {
+    if (!first) await delay(2000);
+    first = false;
+
     const encoded = Buffer.from(content).toString("base64");
     const hash = sha256(encoded).toString("hex");
 
@@ -168,6 +182,7 @@ export async function pushToChain(
   }
 
   // Upload file tree manifest
+  await delay(2000);
   const treeJson = JSON.stringify(fileTree);
   const treeTxId = await iqlabs.writer.codeIn(
     { connection, signer: keypair },
@@ -178,6 +193,7 @@ export async function pushToChain(
   );
 
   // Record commit
+  await delay(2000);
   const commitsSeed = ownerTableSeed(COMMITS_TABLE, wallet);
   const commitId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   await iqlabs.writer.writeRow(connection, keypair, dbRootId, commitsSeed, JSON.stringify({
@@ -367,8 +383,14 @@ export async function runConfigSync(
   localFiles: Record<string, string>,
   log: (msg: string) => void,
 ): Promise<void> {
-  const tree = await checkOnChain(connection, keypair, iqlabs);
   const wallet = keypair.publicKey.toBase58();
+  const tree = await checkOnChain(connection, keypair, iqlabs);
+
+  // If checkOnChain failed due to RPC error, don't re-push — just skip
+  if (tree && (tree as any).__error) {
+    log(`[config-sync] Could not read on-chain state (RPC error), skipping to avoid duplicate push.`);
+    return;
+  }
 
   if (!tree) {
     // No on-chain config — push local files
@@ -402,6 +424,7 @@ export async function runConfigSync(
 
     log(`[config-sync] Pushing ${Object.keys(filesToPush).length} file(s) to on-chain...`);
     await pushToChain(connection, keypair, iqlabs, filesToPush);
+
     log(`[config-sync] Config synced! View at: ${getConfigUrl(wallet)}`);
     return;
   }
@@ -420,6 +443,7 @@ export async function runConfigSync(
       writeFileSync(localPath, content);
       log(`[config-sync] Pulled: ${onChainPath} → ${localPath}`);
     }
+
     return;
   }
 
