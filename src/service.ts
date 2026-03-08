@@ -108,7 +108,7 @@ export class ClawbalService extends Service {
         const characterPath = join(miladyDir, "characters", `${safeName}.character.json`);
         console.log("[config-sync] Starting config sync...");
         try {
-          await runConfigSync(this.connection, this.keypair, this.iqlabs, {
+          await runConfigSync(this.connection, this.keypair, this.iqlabs!, {
             "milady/character.json": characterPath,
           }, (msg: string) => console.log(msg));
 

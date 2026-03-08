@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@elizaos/core": "^1.7.2",
+    "@types/node": "^22.19.15",
     "sharp": "^0.34.5",
     "typescript": "^5.5.0"
   },
