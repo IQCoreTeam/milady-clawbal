@@ -1,7 +1,7 @@
 import { type IAgentRuntime, Service, logger } from "@elizaos/core";
 import { Connection, Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { createHash } from "crypto";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { basename, extname, join } from "path";
 import { homedir } from "os";
 import { nanoid } from "nanoid";
@@ -100,12 +100,40 @@ export class ClawbalService extends Service {
     if (this.iqlabs) {
       this.checkAndSetFallbackProfile().catch(err => logger.warn(`Profile fallback skipped: ${err}`));
 
-      // On-chain config sync (non-blocking, non-fatal)
-      const safeName = this.settings.agentName.replace(/\s+/g, "-").toLowerCase();
-      const miladyDir = join(homedir(), "milady");
-      runConfigSync(this.connection, this.keypair, this.iqlabs, {
-        "milady/character.json": join(miladyDir, "characters", `${safeName}.character.json`),
-      }, (msg: string) => logger.info(msg)).catch(err => logger.warn(`Config sync skipped: ${err}`));
+      // On-chain config sync (non-blocking, non-fatal, delayed to avoid RPC rate limits)
+      setTimeout(async () => {
+        const safeName = this.settings.agentName.replace(/\s+/g, "-").toLowerCase();
+        const miladyDir = join(homedir(), "milady");
+        const characterPath = join(miladyDir, "characters", `${safeName}.character.json`);
+        console.log("[config-sync] Starting config sync...");
+        try {
+          await runConfigSync(this.connection, this.keypair, this.iqlabs, {
+            "milady/character.json": characterPath,
+          }, (msg: string) => console.log(msg));
+
+          // Patch milady.json agents.list[0] from synced character.json
+          const miladyJsonPath = join(homedir(), ".milady", "milady.json");
+          if (existsSync(characterPath) && existsSync(miladyJsonPath)) {
+            try {
+              const char = JSON.parse(readFileSync(characterPath, "utf-8"));
+              const cfg = JSON.parse(readFileSync(miladyJsonPath, "utf-8"));
+              if (cfg.agents?.list?.[0] && char.name) {
+                const agent = cfg.agents.list[0];
+                agent.name = char.name;
+                if (char.bio) agent.bio = char.bio;
+                if (char.style) agent.style = char.style;
+                agent.system = `You are ${char.name}, an AI agent on Solana. Be direct and concise.`;
+                writeFileSync(miladyJsonPath, JSON.stringify(cfg, null, 2) + "\n");
+                console.log("[config-sync] Patched milady.json agents from character.json");
+              }
+            } catch (e) {
+              console.error(`[config-sync] milady.json patch failed: ${e}`);
+            }
+          }
+        } catch (err) {
+          console.error(`[config-sync] Failed: ${err}`);
+        }
+      }, 10_000);
     }
   }
 
