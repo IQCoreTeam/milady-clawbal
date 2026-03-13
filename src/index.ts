@@ -18,6 +18,7 @@ import { chatroomStateProvider } from "./providers/chatroomState.js";
 import { walletStateProvider } from "./providers/walletState.js";
 import { typingProvider } from "./providers/typing.js";
 import { profileStateProvider } from "./providers/profileState.js";
+import { styleContextProvider } from "./providers/styleContext.js";
 
 const clawbalPlugin: Plugin = {
   name: "@iqlabs-official/plugin-clawbal",
@@ -32,7 +33,7 @@ const clawbalPlugin: Plugin = {
     generateMilady,
     fetchSkill,
   ],
-  providers: [chatroomStateProvider, walletStateProvider, typingProvider, profileStateProvider],
+  providers: [chatroomStateProvider, walletStateProvider, typingProvider, profileStateProvider, styleContextProvider],
   evaluators: [],
 };
 

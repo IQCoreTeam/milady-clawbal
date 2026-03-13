@@ -9,7 +9,7 @@ step()  { printf '\n\033[1;37m━━━ [%s] %s ━━━\033[0m\n\n' "$1" "$2";
 hint()  { printf '\033[0;90m    %s\033[0m\n' "$*"; }
 
 MILADY_DIR="$HOME/milady"
-KEYPAIR="$HOME/keypair.json"
+KEYPAIR="${MILADY_KEYPAIR:-$HOME/keypair.json}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo ""
@@ -71,6 +71,15 @@ if [ ! -d "$MILADY_DIR/node_modules/@iqlabs-official/plugin-clawbal" ]; then
   ok "plugin-clawbal installed"
 else
   ok "plugin-clawbal already installed"
+fi
+
+# Install the solana-sdk (required for on-chain write operations)
+if [ ! -d "$MILADY_DIR/node_modules/@iqlabs-official/solana-sdk" ]; then
+  info "Installing @iqlabs-official/solana-sdk..."
+  (cd "$MILADY_DIR" && bun add @iqlabs-official/solana-sdk)
+  ok "solana-sdk installed"
+else
+  ok "solana-sdk already installed"
 fi
 
 # ── 3. Wallet ────────────────────────────────────────────
@@ -168,10 +177,19 @@ echo ""
 
 EXISTING_RPC=""
 if [ -f "$MILADY_DIR/.env" ]; then
-  EXISTING_RPC=$(grep -oP 'SOLANA_RPC_URL=\K.+' "$MILADY_DIR/.env" 2>/dev/null || true)
+  EXISTING_RPC=$(sed -n 's/^SOLANA_RPC_URL=//p' "$MILADY_DIR/.env" 2>/dev/null || true)
+fi
+# Also check ~/.milady/milady.json for SOLANA_RPC_URL
+if [ -z "$EXISTING_RPC" ] && command -v node >/dev/null; then
+  EXISTING_RPC=$(node -e '
+    try {
+      const c = JSON.parse(require("fs").readFileSync(require("os").homedir() + "/.milady/milady.json", "utf-8"));
+      if (c.env?.SOLANA_RPC_URL) console.log(c.env.SOLANA_RPC_URL);
+    } catch {}
+  ' 2>/dev/null || true)
 fi
 if [ -n "$EXISTING_RPC" ] && [ "$EXISTING_RPC" != "https://api.mainnet-beta.solana.com" ]; then
-  read -rp "  Found existing RPC (${EXISTING_RPC:0:40}...). Press Enter to keep, or paste new: " INPUT_RPC
+  read -rp "  Found existing RPC (${EXISTING_RPC:0:40}...). Enter to keep, or paste new: " INPUT_RPC
   if [ -z "$INPUT_RPC" ]; then
     SOLANA_RPC="$EXISTING_RPC"
   else
@@ -232,7 +250,7 @@ if [ -n "$WALLET_PUBKEY" ]; then
       try {
         const s=JSON.parse(d);
         const p=typeof s.profileData==='string'?JSON.parse(s.profileData):s.profileData;
-        if(p?.name) console.log(p.name);
+        if(p?.name) console.log(p.name.replace(/[\uFFFD]/g,'').trim());
       } catch{}
     });
   " 2>/dev/null || true)
@@ -325,11 +343,48 @@ ok "~/.milady/milady.json updated"
 # ── 7. Character File ───────────────────────────────────
 step "7/7" "Agent Character"
 
-SAFE_NAME=$(echo "$AGENT_NAME" | tr ' ' '-' | tr '[:upper:]' '[:lower:]')
+SAFE_NAME=$(echo "$AGENT_NAME" | LC_ALL=C tr ' ' '-' | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C sed 's/[^a-z0-9_-]//g')
 CHARACTER_FILE="$MILADY_DIR/characters/${SAFE_NAME}.character.json"
 mkdir -p "$MILADY_DIR/characters"
 
-if [ -f "$CHARACTER_FILE" ]; then
+# Check if on-chain character already exists (only if Helius RPC is configured)
+ONCHAIN_CHARACTER=""
+ONCHAIN_CHOICE=""
+if [ "$SOLANA_RPC" != "https://api.mainnet-beta.solana.com" ] && [ -n "$WALLET_PUBKEY" ]; then
+  ONCHAIN_PROFILE=$(curl -sf "https://gateway.iqlabs.dev/user/${WALLET_PUBKEY}/state" 2>/dev/null || true)
+  if [ -n "$ONCHAIN_PROFILE" ]; then
+    ONCHAIN_NAME=$(echo "$ONCHAIN_PROFILE" | node -e '
+      let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{
+        try {
+          const s=JSON.parse(d);
+          if (!s.profileData) return;
+          const p=typeof s.profileData==="string"?JSON.parse(s.profileData):s.profileData;
+          if(p?.name) console.log(p.name);
+        } catch{}
+      });
+    ' 2>/dev/null || true)
+    if [ -n "$ONCHAIN_NAME" ]; then
+      ONCHAIN_CHARACTER="$ONCHAIN_NAME"
+      info "Found existing on-chain agent: ${ONCHAIN_NAME}"
+      hint "On-chain config will sync automatically on startup via config-sync."
+      echo ""
+      hint "  [Enter] Keep on-chain character (recommended)"
+      hint "  [new]   Create a new character (will overwrite on-chain on next start)"
+      echo ""
+      printf '  Choice: '
+      read -r ONCHAIN_CHOICE
+      if [ -z "$ONCHAIN_CHOICE" ]; then
+        ok "keeping on-chain character (${ONCHAIN_NAME})"
+        hint "config-sync will pull the latest on startup"
+      fi
+    fi
+  fi
+fi
+
+if [ -n "$ONCHAIN_CHARACTER" ] && [ -z "$ONCHAIN_CHOICE" ]; then
+  # User chose to keep on-chain character
+  :
+elif [ -f "$CHARACTER_FILE" ] && [ -z "$ONCHAIN_CHOICE" ]; then
   ok "character file already exists (will sync with on-chain config on startup)"
   hint "customize your agent: edit $CHARACTER_FILE"
 else
@@ -353,42 +408,83 @@ else
       printf '  Agent name [%s]: ' "$AGENT_NAME"
       read -r CUSTOM_NAME
       CUSTOM_NAME="${CUSTOM_NAME:-$AGENT_NAME}"
-      printf '  What is your agent? (e.g. "a memecoin degen", "a wise philosopher"): '
-      read -r CUSTOM_BIO
-      CUSTOM_BIO="${CUSTOM_BIO:-an AI agent that lives on-chain on Solana}"
-      printf '  Style? (e.g. "sarcastic and funny", "formal and precise"): '
-      read -r CUSTOM_STYLE
-      CUSTOM_STYLE="${CUSTOM_STYLE:-speak naturally, like texting a friend}"
+      printf '  Describe your agent (personality, background, vibe — a sentence or two):\n  > '
+      read -r CUSTOM_DESC
+      CUSTOM_DESC="${CUSTOM_DESC:-an on-chain AI that lurks in Solana chatrooms, sarcastic and meme-poisoned}"
+
+      info "Generating character with AI..."
 
       export CFG_CUSTOM_NAME="$CUSTOM_NAME"
-      export CFG_CUSTOM_BIO="$CUSTOM_BIO"
-      export CFG_CUSTOM_STYLE="$CUSTOM_STYLE"
+      export CFG_CUSTOM_DESC="$CUSTOM_DESC"
+      export CFG_EXAMPLE=""
+      if [ -f "$SCRIPT_DIR/examples/default/default.character.json" ]; then
+        export CFG_EXAMPLE=$(cat "$SCRIPT_DIR/examples/default/default.character.json")
+      fi
+
+      # Build request JSON via node (avoids shell escaping issues)
       node -e '
+const fs = require("fs");
+const example = process.env.CFG_EXAMPLE || "";
+const body = {
+  model: "deepseek/deepseek-v3.2",
+  temperature: 0.7,
+  messages: [
+    {
+      role: "system",
+      content: "You generate ElizaOS character.json files for on-chain AI agents on Solana.\n\nSTRICT OUTPUT RULES:\n- Return ONLY valid JSON. No markdown, no backticks, no explanation.\n- The JSON must match this exact structure:\n\n{\n  \"name\": \"<agent name>\",\n  \"plugins\": [\"@iqlabs-official/plugin-clawbal\"],\n  \"settings\": {\n    \"model\": \"openrouter/deepseek/deepseek-v3.2\",\n    \"voice\": { \"model\": \"en_US-male-medium\" }\n  },\n  \"bio\": [\n    \"<string 1>\",\n    \"<string 2>\",\n    \"...6-8 strings total\"\n  ],\n  \"style\": {\n    \"all\": [\n      \"<string 1>\",\n      \"<string 2>\",\n      \"...8-12 strings total\"\n    ]\n  }\n}\n\nFIELD RULES:\n- \"name\": exactly as the user provides\n- \"plugins\", \"settings\": copy exactly as shown above, never change\n- \"bio\": 6-8 strings. Each string is one aspect of personality, background, or worldview. Written in third person lowercase, no periods. These define WHO the agent IS.\n- \"style.all\": 8-12 strings. Each string is one rule for HOW the agent talks. Written as short directives. These define the agent voice and formatting rules."
+        + (example ? "\n\nREFERENCE EXAMPLE (for tone/structure only):\n" + example : "")
+        + "\n\nGenerate a unique character that fits the user description. Do NOT copy the example."
+    },
+    {
+      role: "user",
+      content: "Agent name: " + process.env.CFG_CUSTOM_NAME + "\nDescription: " + process.env.CFG_CUSTOM_DESC
+    }
+  ]
+};
+fs.writeFileSync("/tmp/milady-ai-req.json", JSON.stringify(body));
+      '
+
+      curl -sf https://openrouter.ai/api/v1/chat/completions \
+        -H "Authorization: Bearer $OPENROUTER_KEY" \
+        -H "Content-Type: application/json" \
+        -d @/tmp/milady-ai-req.json \
+        -o /tmp/milady-ai-raw.json 2>/dev/null
+
+      # Extract and validate the character JSON from AI response
+      AI_CHARACTER=$(node -e '
+const fs = require("fs");
+try {
+  const raw = fs.readFileSync("/tmp/milady-ai-raw.json", "utf-8");
+  const r = JSON.parse(raw);
+  let content = r.choices[0].message.content.trim();
+  content = content.replace(/^```(?:json)?\s*\n?/,"").replace(/\n?```\s*$/,"").trim();
+  const parsed = JSON.parse(content);
+  parsed.plugins = ["@iqlabs-official/plugin-clawbal"];
+  parsed.settings = { model: "openrouter/deepseek/deepseek-v3.2", voice: { model: "en_US-male-medium" } };
+  console.log(JSON.stringify(parsed, null, 2));
+} catch(e) { process.exit(1); }
+      ' 2>/dev/null)
+
+      if [ -n "$AI_CHARACTER" ]; then
+        echo "$AI_CHARACTER" > "$CHARACTER_FILE"
+        ok "AI-generated character: $CHARACTER_FILE"
+      else
+        warn "AI generation failed — falling back to template"
+        export CFG_CUSTOM_NAME CFG_CUSTOM_DESC
+        node -e '
 const fs = require("fs");
 const character = {
   name: process.env.CFG_CUSTOM_NAME,
   plugins: ["@iqlabs-official/plugin-clawbal"],
-  settings: {
-    model: "openrouter/deepseek/deepseek-v3.2",
-    voice: { model: "en_US-male-medium" }
-  },
-  bio: [
-    process.env.CFG_CUSTOM_BIO,
-    "chats in Clawbal chatrooms on Solana"
-  ],
-  style: {
-    all: [
-      process.env.CFG_CUSTOM_STYLE,
-      "no bullet points, no markdown, no lists",
-      "short and direct, one thought at a time"
-    ]
-  }
+  settings: { model: "openrouter/deepseek/deepseek-v3.2", voice: { model: "en_US-male-medium" } },
+  bio: [ process.env.CFG_CUSTOM_DESC, "chats in Clawbal chatrooms on Solana" ],
+  style: { all: [ "speak naturally, like texting a friend", "no bullet points, no markdown, no lists", "short and direct, one thought at a time" ] }
 };
 const dir = process.env.CFG_MILADY_DIR + "/characters/";
 fs.writeFileSync(dir + process.env.CFG_SAFE_NAME + ".character.json", JSON.stringify(character, null, 2) + "\n");
-      ' || die "Failed to write character file"
-
-      ok "generated character from your description: $CHARACTER_FILE"
+        ' || die "Failed to write character file"
+        ok "template character created: $CHARACTER_FILE"
+      fi
       ;;
     3)
       echo ""
