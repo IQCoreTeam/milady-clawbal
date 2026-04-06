@@ -13,7 +13,6 @@
 
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { createHash } from "crypto";
-import { createRequire } from "module";
 import { readFileSync, writeFileSync, renameSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import type { IQLabsSDK } from "./types.js";
@@ -113,9 +112,7 @@ export async function pushToChain(
   // Ensure DB root exists
   const rootInfo = await connection.getAccountInfo(dbRootPda);
   if (!rootInfo) {
-    const require_ = createRequire(import.meta.url);
-    const idl = require_("iqlabs-sdk/idl/code_in.json");
-    const builder = iqlabs.contract.createInstructionBuilder(idl, programId);
+    const builder = iqlabs.contract.createInstructionBuilder();
     const ix = iqlabs.contract.initializeDbRootInstruction(builder, {
       db_root: dbRootPda,
       signer: keypair.publicKey,
@@ -235,9 +232,7 @@ async function ensureTable(
   const info = await connection.getAccountInfo(tablePda);
   if (info) return;
 
-  const require_ = createRequire(import.meta.url);
-  const idl = require_("iqlabs-sdk/idl/code_in.json");
-  const builder = iqlabs.contract.createInstructionBuilder(idl, programId);
+  const builder = iqlabs.contract.createInstructionBuilder();
   const idCol = columns.find(c => c === "id" || c === "name") || columns[0];
 
   const ix = iqlabs.contract.createTableInstruction(builder, {
@@ -250,6 +245,7 @@ async function ensureTable(
   }, {
     db_root_id: Buffer.from(dbRootId),
     table_seed: Buffer.from(tableSeed),
+    table_hint: Buffer.from(tableName),
     table_name: Buffer.from(tableName),
     column_names: columns.map(c => Buffer.from(c)),
     id_col: Buffer.from(idCol),

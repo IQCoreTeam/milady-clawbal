@@ -41,7 +41,7 @@ export interface IQLabsSDK {
     getDbRootPda(dbRootId: Buffer, programId: PublicKey): PublicKey;
     getTablePda(dbRootPda: PublicKey, tableSeed: Buffer, programId: PublicKey): PublicKey;
     getInstructionTablePda(dbRootPda: PublicKey, tableSeed: Buffer, programId: PublicKey): PublicKey;
-    createInstructionBuilder(idl: unknown, programId: PublicKey): unknown;
+    createInstructionBuilder(idl?: unknown, programId?: PublicKey): unknown;
     createTableInstruction(builder: unknown, accounts: Record<string, PublicKey>, args: Record<string, unknown>): TransactionInstruction;
     initializeDbRootInstruction(builder: unknown, accounts: Record<string, PublicKey>, args: { db_root_id: Buffer }): TransactionInstruction;
   };
