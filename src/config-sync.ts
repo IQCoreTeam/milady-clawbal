@@ -232,30 +232,22 @@ async function ensureTable(
   const info = await connection.getAccountInfo(tablePda);
   if (info) return;
 
-  const builder = iqlabs.contract.createInstructionBuilder();
   const idCol = columns.find(c => c === "id" || c === "name") || columns[0];
 
-  const ix = iqlabs.contract.createTableInstruction(builder, {
-    db_root: dbRootPda,
-    receiver: keypair.publicKey,
-    signer: keypair.publicKey,
-    table: tablePda,
-    instruction_table: iqlabs.contract.getInstructionTablePda(dbRootPda, tableSeed, programId),
-    system_program: SystemProgram.programId,
-  }, {
-    db_root_id: Buffer.from(dbRootId),
-    table_seed: Buffer.from(tableSeed),
-    table_hint: Buffer.from(tableName),
-    table_name: Buffer.from(tableName),
-    column_names: columns.map(c => Buffer.from(c)),
-    id_col: Buffer.from(idCol),
-    ext_keys: [],
-    gate_mint_opt: null,
-    writers_opt: null,
-  });
-
   console.log(`Creating table '${tableName}'...`);
-  await sendAndConfirmTransaction(connection, new Transaction().add(ix), [keypair]);
+  await iqlabs.writer.createTable(
+    connection,
+    keypair,
+    dbRootId,
+    tableSeed,
+    tableName,
+    columns,
+    idCol,
+    [],
+    undefined,
+    undefined,
+    tableName,
+  );
 }
 
 // ─── Config format conversion ───

@@ -48,6 +48,19 @@ export interface IQLabsSDK {
   writer: {
     writeRow(connection: Connection, keypair: Keypair, dbRootId: Buffer, tableSeed: Buffer, data: string): Promise<string>;
     codeIn(ctx: { connection: Connection; signer: Keypair }, data: string | string[], filename?: string, method?: number, filetype?: string): Promise<string>;
+    createTable(
+      connection: Connection,
+      signer: Keypair,
+      dbRootId: Buffer | Uint8Array | string,
+      tableSeed: Buffer | Uint8Array | string,
+      tableName: Buffer | Uint8Array | string,
+      columnNames: Array<Buffer | Uint8Array | string>,
+      idCol: Buffer | Uint8Array | string,
+      extKeys: Array<Buffer | Uint8Array | string>,
+      gate?: unknown,
+      writers?: PublicKey[],
+      tableHint?: Buffer | Uint8Array | string,
+    ): Promise<string>;
   };
   reader: {
     readTableRows(tablePda: PublicKey, options?: { limit: number }): Promise<ClawbalMessage[]>;
