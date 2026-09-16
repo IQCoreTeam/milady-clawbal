@@ -38,8 +38,8 @@
     }
   },
   "dependencies": {
-    "@iqlabs-official/solana-sdk": "^0.1.27",
-    "@solana/web3.js": "^1.95.0",
+    "@iqlabs-official/solana-sdk": "^0.2.0",
+    "@solana/web3.js": "^1.99.0",
     "bs58": "^6.0.0",
     "nanoid": "^5.0.0"
   },
